@@ -1,5 +1,5 @@
-fs = require "fs"
-{writeWAV} = require "./riffwave"
+# fs = require "fs"
+{makeBlobUrl} = require "riffwave"
 
 clone = (obj) ->
   if not obj? or typeof obj isnt 'object'
@@ -49,7 +49,7 @@ countIndent = (text) ->
   return indent
 
 class Parser
-  constructor: ->
+  constructor: (@log) ->
     @commentRegex = /^([^#]*?)(\s*#.*)?$/
     @onlyWhitespaceRegex = /^\s*$/
     @indentRegex = /^(\s*)(\S.*)$/
@@ -86,7 +86,7 @@ class Parser
     return @objectKeys[type]?
 
   error: (text) ->
-    console.log "PARSE ERROR, line #{@lineNo}: #{text}"
+    @log "PARSE ERROR, line #{@lineNo}: #{text}"
 
   reset: (name) ->
     name ?= 'default'
@@ -105,7 +105,7 @@ class Parser
 
   trace: (prefix) ->
     prefix ?= ''
-    console.log "trace: #{prefix} " + JSON.stringify(@flatten())
+    @log "trace: #{prefix} " + JSON.stringify(@flatten())
 
   createObject: (data...) ->
       @finishObject()
@@ -185,8 +185,8 @@ class Parser
 
     return true
 
-  parse: (filename) ->
-    lines = fs.readFileSync('input.bs').toString().split('\n');
+  parse: (text) ->
+    lines = text.split('\n')
     @lineNo = 0
     for line in lines
       @lineNo++
@@ -206,7 +206,7 @@ class Parser
       else
         loop
           if not @indentStack.pop()
-            console.log "Unexpected indent #{indent} on line #{lineNo}: #{line}"
+            @log "Unexpected indent #{indent} on line #{lineNo}: #{line}"
             return false
           if not @popScope()
             return false
@@ -222,10 +222,10 @@ class Parser
     return true
 
 class Renderer
-  constructor: (@sampleRate, @objects) ->
+  constructor: (@log, @sampleRate, @objects) ->
 
   error: (text) ->
-    console.log "RENDER ERROR: #{text}"
+    @log "RENDER ERROR: #{text}"
 
   renderTone: (toneObj) ->
     samples = []
@@ -313,19 +313,35 @@ class Renderer
         @error "unknown type #{object._type}"
         null
 
-    console.log "Rendered #{which}."
+    @log "Rendered #{which}."
     object._samples = samples
     return samples
 
-main = ->
-  parser = new Parser
-  parser.parse 'input.bs'
-  console.log JSON.stringify(parser.objects, null, 2)
+# main = ->
+#   parser = new Parser
+#   parser.parse 'input.bs'
+#   @log JSON.stringify(parser.objects, null, 2)
+
+#   if parser.lastObject
+#     sampleRate = 44100
+#     renderer = new Renderer(sampleRate, parser.objects)
+#     outputSamples = renderer.render(parser.lastObject)
+#     writeWAV('out.wav', sampleRate, outputSamples)
+
+renderLoopScript = (loopscript, logCB) ->
+
+  logCB "Parsing..."
+  parser = new Parser(logCB)
+  parser.parse loopscript
 
   if parser.lastObject
     sampleRate = 44100
-    renderer = new Renderer(sampleRate, parser.objects)
+    logCB "Rendering..."
+    renderer = new Renderer(logCB, sampleRate, parser.objects)
     outputSamples = renderer.render(parser.lastObject)
-    writeWAV('out.wav', sampleRate, outputSamples)
+    return makeBlobUrl(sampleRate, outputSamples)
 
-main()
+  return null
+
+module.exports =
+  render: renderLoopScript

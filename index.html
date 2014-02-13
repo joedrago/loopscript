@@ -7,31 +7,120 @@
   <style type="text/css" media="screen">
     body {
         overflow: hidden;
+        background-color: #000;
     }
 
-/*
-    #editor {
-        margin: 0;
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        right: 0;
+    a {
+      color: #C397D8;
+      text-decoration: none;
     }
-*/
+
+    .title {
+      color: #C397D8;
+      font-weight: 900;
+      font-size: 5em;
+      font-family: monospace;
+    }
 
     #editor {
-      width: 90%;
+      width: 100%;
       height: 500px;
+      /*
+      width: 90%;
+      height: 400px;
+      margin-left: auto;
+      margin-right: auto;
 
-        margin: 0;
+      border: 1px solid #C397D8;
+      padding: 5px;
+      */
     }
 
-  </style>
+    #output {
+      width: 100%;
+      height: 500px;
+      margin-left: auto;
+      margin-right: auto;
+
+      padding: 5px;
+
+      font-family: monospace;
+      color: #aaa;
+
+      overflow: auto;
+    }
+
+    #coltable {
+      width: 90%;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    #coltable td {
+      border: 1px solid #C397D8;
+    }
+
+    .butto {
+      -moz-box-shadow:inset 0px 1px 0px 0px #d197fe;
+      -webkit-box-shadow:inset 0px 1px 0px 0px #d197fe;
+      box-shadow:inset 0px 1px 0px 0px #d197fe;
+      background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #c397d8), color-stop(1, #7c16cb) );
+      background:-moz-linear-gradient( center top, #c397d8 5%, #7c16cb 100% );
+      filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#c397d8', endColorstr='#7c16cb');
+      background-color:#c397d8;
+      -webkit-border-top-left-radius:20px;
+      -moz-border-radius-topleft:20px;
+      border-top-left-radius:20px;
+      -webkit-border-top-right-radius:20px;
+      -moz-border-radius-topright:20px;
+      border-top-right-radius:20px;
+      -webkit-border-bottom-right-radius:20px;
+      -moz-border-radius-bottomright:20px;
+      border-bottom-right-radius:20px;
+      -webkit-border-bottom-left-radius:20px;
+      -moz-border-radius-bottomleft:20px;
+      border-bottom-left-radius:20px;
+      text-indent:0;
+      border:1px solid #9c33ed;
+      display:inline-block;
+      color:#ffffff;
+      font-family:Courier New;
+      font-size:15px;
+      font-weight:bold;
+      font-style:normal;
+      height:43px;
+      line-height:43px;
+      width:200px;
+      text-decoration:none;
+      text-align:center;
+      text-shadow:1px 1px 0px #7d15cd;
+    }
+    .butto:hover {
+      background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #7c16cb), color-stop(1, #c397d8) );
+      background:-moz-linear-gradient( center top, #7c16cb 5%, #c397d8 100% );
+      filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#7c16cb', endColorstr='#c397d8');
+      background-color:#7c16cb;
+    }.butto:active {
+      position:relative;
+      top:1px;
+    }
+
+</style>
 </head>
 <body>
 
-<div id="editor">bpm 100
+<center>
+<div class="title">LoopScript</div>
+</center>
+
+<br>
+
+<table id="coltable" width="90%"><tr><td width="50%">
+<div id="editor">
+# ------------------------------------------------------------
+# Your first LoopScript. Someday there will be documentation!
+
+bpm 100
 
 tone bass1
    freq 61.7
@@ -52,13 +141,48 @@ track song
   pattern loop1 xxxx....
   pattern loop2 ....xxxx
 </div>
+</td>
+<td>
+<div id="output">
+Compile output:<br>
+<br>
+</div>
+</td>
+</tr></table>
 
 <script src="ace/ace.js" type="text/javascript" charset="utf-8"></script>
+<script src="js/jquery-1.11.0.min.js" type="text/javascript" charset="utf-8"></script>
+<script src="js/loopscript.js" type="text/javascript" charset="utf-8"></script>
 <script>
     var editor = ace.edit("editor");
-    editor.setTheme("ace/theme/twilight");
+    editor.setTheme("ace/theme/tomorrow_night_bright");
     editor.getSession().setMode("ace/mode/loopscript");
+    editor.setHighlightActiveLine(false);
+
+    var loopscript = require("loopscript");
+    function render()
+    {
+      var scriptText = editor.getValue();
+      console.log("Script text: " + scriptText);
+      var blobUrl = loopscript.render(scriptText, function(text) {
+        $('#output').append(text + "<br>");
+        var o = document.getElementById("output");
+        o.scrollTop = o.scrollHeight;
+      });
+      $('#renderedlink').html("<audio src="+blobUrl+" controls preload=\"auto\" autobuffer></audio><br><a href="+blobUrl+">Right click here to Save As...</a>");
+    }
+
+    $(function() {
+      editor.resize();
+    });
 </script>
+
+<br>
+<center>
+<a href="#" class="butto" onclick="render()">Compile LoopScript</a>
+<br><br>
+<div id="renderedlink"></div>
+</center>
 
 </body>
 </html>

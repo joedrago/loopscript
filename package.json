@@ -1,0 +1,12 @@
+{
+  "name": "loopscript",
+  "version": "0.0.1",
+  "private": true,
+  "dependencies": {
+    "browserify": "*",
+    "coffeeify": "*",
+    "mold-source-map": "*",
+    "node-watch": "*",
+    "node-static": "*"
+  }
+}

@@ -36,16 +36,20 @@ var LoopScriptHighlightRules = function() {
     this.$rules = { //new TextHighlightRules().getRules();
         start: [
             {
-                token: ["","keyword", "", "string"], // String, Array, or Function
-                regex: "^(\\s*)(tone|loop|track)(\\s+)(\\S+)" // String
+                token: ["comment"],
+                regex: "#.*"
             },
             {
-                token: ["","support.function", "", "string", "variable.parameter"], // String, Array, or Function
-                regex: "^(\\s*)(pattern)(\\s+)(\\S+)(.*)" // String
+                token: ["","keyword", "", "string"],
+                regex: "^(\\s*)(tone|loop|track)(\\s+)(\\S+)"
             },
             {
-                token: ["","support.function", "", "variable.parameter"], // String, Array, or Function
-                regex: "^(\\s*)(bpm|freq|duration)(\\s+)(.+)" // String
+                token: ["","support.function", "", "string", "variable.parameter"],
+                regex: "^(\\s*)(pattern)(\\s+)(\\S+)(.*)"
+            },
+            {
+                token: ["","support.function", "", "variable.parameter"],
+                regex: "^(\\s*)(bpm|freq|duration)(\\s+)(.+)"
             }
         ]
     };

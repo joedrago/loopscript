@@ -96,7 +96,7 @@ class RIFFWAVE
     )
     fb = new FastBase64
     @base64Data = fb.encode(@wav)
-    @dataURI = 'data:audio/wavbase64,' + @base64Data
+    @dataURI = 'data:audio/wav;base64,' + @base64Data
 
   raw: ->
     return new Buffer(@base64Data, "base64")
@@ -106,6 +106,38 @@ writeWAV = (filename, sampleRate, samples) ->
   fs.writeFileSync(filename, wave.raw())
   return true
 
+makeDataURI = (sampleRate, samples) ->
+  wave = new RIFFWAVE sampleRate, samples
+  return wave.dataURI
+
+b64toBlob = (b64Data, contentType, sliceSize) ->
+  contentType = contentType || ''
+  sliceSize = sliceSize || 512
+
+  byteCharacters = atob(b64Data)
+  byteArrays = []
+
+  for offset in [0...byteCharacters.length] by sliceSize
+    slice = byteCharacters.slice(offset, offset + sliceSize)
+
+    byteNumbers = new Array(slice.length)
+    for i in [0...slice.length]
+      byteNumbers[i] = slice.charCodeAt(i)
+
+    byteArray = new Uint8Array(byteNumbers)
+
+    byteArrays.push(byteArray)
+
+  blob = new Blob(byteArrays, {type: contentType})
+  return blob
+
+makeBlobUrl = (sampleRate, samples) ->
+  wave = new RIFFWAVE sampleRate, samples
+  blob = b64toBlob(wave.base64Data, "audio/wav")
+  return URL.createObjectURL(blob)
+
 module.exports =
   RIFFWAVE: RIFFWAVE
   writeWAV: writeWAV
+  makeDataURI: makeDataURI
+  makeBlobUrl: makeBlobUrl
