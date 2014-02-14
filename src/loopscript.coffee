@@ -1,4 +1,3 @@
-# fs = require "fs"
 {makeBlobUrl} = require "riffwave"
 
 clone = (obj) ->
@@ -70,6 +69,9 @@ class Parser
         freq: 'float'
         duration: 'float'
         adsr: 'adsr'
+
+      sample:
+        src: 'string'
 
       loop:
         bpm: 'int'
@@ -301,6 +303,36 @@ class Renderer
 
     return samples
 
+  renderSample: (sampleObj) ->
+    view = null
+
+    $.ajax {
+      url: sampleObj.src
+      mimeType: 'text/plain; charset=x-user-defined'
+      success: (data) ->
+        console.log "data length #{data.length}"
+        view = new jDataView(data, 0, data.length, true)
+      async: false
+    }
+
+    if not view
+      return []
+
+    console.log "#{sampleObj.src} is #{view.byteLength} in size"
+
+    # skip the first 40 bytes
+    view.seek(40)
+    subchunk2Size = view.getInt32()
+    console.log "subchunk2Size is #{subchunk2Size}"
+
+    samples = []
+    while view.tell()+1 < view.byteLength
+      samples.push view.getInt16()
+    console.log "looped #{samples.length} times"
+
+    return samples
+
+
   renderLoop: (loopObj) ->
     beatCount = 0
     for pattern in loopObj._patterns
@@ -335,6 +367,7 @@ class Renderer
       when 'tone' then @renderTone(object)
       when 'loop' then @renderLoop(object)
       when 'track' then @renderTrack(object)
+      when 'sample' then @renderSample(object)
       else
         @error "unknown type #{object._type}"
         null

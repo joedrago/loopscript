@@ -116,12 +116,15 @@ tone bass1
   duration 800
   adsr 0.005 0.05 0.7 0.05
 
+sample clap
+  src samples/clap.wav
+
 loop loop1
-  pattern bass1 x...x...x...x...
+  pattern bass1 x.......x.......
+  pattern clap  ....x.......x...
 
 track song
   pattern loop1 xxxx
-
 </div>
 </td>
 <td>
@@ -134,6 +137,7 @@ Compile output:<br>
 
 <script src="ace/ace.js" type="text/javascript" charset="utf-8"></script>
 <script src="js/jquery-1.11.0.min.js" type="text/javascript" charset="utf-8"></script>
+<script src="js/jdataview.js" type="text/javascript" charset="utf-8"></script>
 <script src="js/loopscript.js" type="text/javascript" charset="utf-8"></script>
 <script>
     var editor = ace.edit("editor");

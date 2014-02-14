@@ -12,7 +12,7 @@ oop.inherits(Mode, TextMode);
 
 (function() {
     this.prevIndentRegex = /^(\s*)/;
-    this.addIndentRegex = /^\s*(tone|loop|track)/;
+    this.addIndentRegex = /^\s*(tone|loop|track|sample)/;
     this.getNextLineIndent = function(state, line, tab) {
         prevIndent = line.match(this.prevIndentRegex)[1];
         if(this.addIndentRegex.test(line))
@@ -41,7 +41,7 @@ var LoopScriptHighlightRules = function() {
             },
             {
                 token: ["","keyword", "", "string"],
-                regex: "^(\\s*)(tone|loop|track)(\\s+)(\\S+)"
+                regex: "^(\\s*)(tone|loop|track|sample)(\\s+)(\\S+)"
             },
             {
                 token: ["","support.function", "", "string", "variable.parameter"],
@@ -53,7 +53,7 @@ var LoopScriptHighlightRules = function() {
             },
             {
                 token: ["","support.function", "", "variable.parameter"],
-                regex: "^(\\s*)(bpm|freq|duration)(\\s+)(.+)"
+                regex: "^(\\s*)(bpm|freq|duration|src)(\\s+)(.+)"
             }
         ]
     };
