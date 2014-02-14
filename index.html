@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-  <title>Editor</title>
+  <title>LoopScript</title>
   <style type="text/css" media="screen">
     body {
         overflow: hidden;
@@ -25,15 +25,6 @@
     #editor {
       width: 100%;
       height: 500px;
-      /*
-      width: 90%;
-      height: 400px;
-      margin-left: auto;
-      margin-right: auto;
-
-      border: 1px solid #C397D8;
-      padding: 5px;
-      */
     }
 
     #output {
@@ -120,26 +111,17 @@
 # ------------------------------------------------------------
 # Your first LoopScript. Someday there will be documentation!
 
-bpm 100
-
 tone bass1
-   freq 61.7
-   duration 300
-
-tone hat1
-   freq 440
-   duration 50
+  freq 62
+  duration 800
+  adsr 0.005 0.05 0.7 0.05
 
 loop loop1
-  pattern bass1 x..xx......x....
-  pattern hat1  ..x...x...x...x.
-
-loop loop2
-  pattern hat1  ..x...x...x...x.
+  pattern bass1 x...x...x...x...
 
 track song
-  pattern loop1 xxxx....
-  pattern loop2 ....xxxx
+  pattern loop1 xxxx
+
 </div>
 </td>
 <td>
@@ -163,7 +145,6 @@ Compile output:<br>
     function render()
     {
       var scriptText = editor.getValue();
-      console.log("Script text: " + scriptText);
       var blobUrl = loopscript.render(scriptText, function(text) {
         $('#output').append(text + "<br>");
         var o = document.getElementById("output");

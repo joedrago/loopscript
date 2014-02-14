@@ -62,12 +62,14 @@ class Parser
         bpm: 120
         duration: 200
         beats: 4
+        adsr: [0, 0, 1, 1]
 
     @objectKeys =
       tone:
         wave: 'string'
         freq: 'float'
         duration: 'float'
+        adsr: 'adsr'
 
       loop:
         bpm: 'int'
@@ -176,6 +178,12 @@ class Parser
         src: tokens[1]
         pattern: tokens[2]
       }
+    else if cmd == 'adsr'
+      @stateStack[@stateStack.length - 1][cmd] =
+        a: parseFloat(tokens[1])
+        d: parseFloat(tokens[2])
+        s: parseFloat(tokens[3])
+        r: parseFloat(tokens[4])
     else
       # The boring regular case: stash off this value
       if @leadingUnderscoreRegex.test(cmd)
@@ -227,28 +235,46 @@ class Renderer
   error: (text) ->
     @log "RENDER ERROR: #{text}"
 
+  generateEnvelope: (adsr, length) ->
+    envelope = Array(length)
+    AtoD = Math.floor(adsr.a * length)
+    DtoS = Math.floor(adsr.d * length)
+    StoR = Math.floor(adsr.r * length)
+    attackLen = AtoD
+    decayLen = DtoS - AtoD
+    sustainLen = StoR - DtoS
+    releaseLen = length - StoR
+    sustain = adsr.s
+    peakSustainDelta = 1.0 - sustain
+    for i in [0...attackLen]
+      # Attack
+      envelope[i] = i / attackLen
+    for i in [0...decayLen]
+      # Decay
+      envelope[AtoD + i] = 1.0 - (peakSustainDelta * (i / decayLen))
+    for i in [0...sustainLen]
+      # Sustain
+      envelope[DtoS + i] = sustain
+    for i in [0...releaseLen]
+      # Release
+      envelope[StoR + i] = sustain - (sustain * (i / releaseLen))
+    return envelope
+
   renderTone: (toneObj) ->
-    samples = []
     offset = 0
     amplitude = 16000
     length = Math.floor(toneObj.duration * @sampleRate / 1000)
-    falloffStart = length - Math.floor(@sampleRate / 20) # fade the last 0.05 sec to avoid pop
-    if(toneObj.falloff)
-      falloffStart = 0 # fade it all out linearly
-    falloffWindow = length - falloffStart
+    samples = Array(length)
     A = 200
     B = 0.5
     freq = toneObj.freq
+    envelope = @generateEnvelope(toneObj.adsr, length)
     for i in [0...length]
       period = @sampleRate / freq
-
-      falloffFactor = 1
-      if i > falloffStart
-        falloffFactor = 1.0 - ((i - falloffStart) / falloffWindow)
       sine = Math.sin(offset + i / period * 2 * Math.PI)
       # if(toneObj.wav == "square")
       #   sine = (sine > 0) ? 1 : -1
-      samples[i] = sine * amplitude * falloffFactor
+      samples[i] = sine * amplitude * envelope[i]
     return samples
 
   renderPatterns: (patterns, totalLength, calcSliceLength) ->
@@ -317,19 +343,7 @@ class Renderer
     object._samples = samples
     return samples
 
-# main = ->
-#   parser = new Parser
-#   parser.parse 'input.bs'
-#   @log JSON.stringify(parser.objects, null, 2)
-
-#   if parser.lastObject
-#     sampleRate = 44100
-#     renderer = new Renderer(sampleRate, parser.objects)
-#     outputSamples = renderer.render(parser.lastObject)
-#     writeWAV('out.wav', sampleRate, outputSamples)
-
 renderLoopScript = (loopscript, logCB) ->
-
   logCB "Parsing..."
   parser = new Parser(logCB)
   parser.parse loopscript
