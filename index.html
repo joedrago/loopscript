@@ -108,33 +108,17 @@
 <center>
 <div class="title">LoopScript</div>
 <div class="description">
-Makefiles for sound!<br>
-<br>
-[<a href="http://github.com/joedrago/loopscript">Visit on GitHub</a>]
+Makefiles for sound! Check out the source on <a href="http://github.com/joedrago/loopscript">GitHub</a>.<br>
+Try out some examples:<br>
+[<a href="#" onclick="example('first')">Your First LoopScript</a>]
+[<a href="#" onclick="example('motto')">Drake - The Motto</a>]
 </div>
 </center>
 
 <br>
 
 <table id="coltable" width="90%"><tr><td width="50%">
-<div id="editor">
-# ------------------------------------------------------------
-# Your first LoopScript. Someday there will be documentation!
-
-tone bass1
-  duration 800
-  adsr 0.005 0.05 0.7 0.05
-
-sample clap
-  src samples/clap.wav
-
-loop loop1
-  pattern bass1 a...b...c...d...
-  pattern clap  ....Gg......x...
-
-track song
-  pattern loop1 xxxx
-</div>
+<div id="editor"></div>
 </td>
 <td>
 <div id="output">
@@ -155,6 +139,7 @@ Compile output:<br>
     editor.setHighlightActiveLine(false);
 
     var loopscript = require("loopscript");
+    var examples = require("examples");
     function render()
     {
       var scriptText = editor.getValue();
@@ -166,9 +151,21 @@ Compile output:<br>
       $('#renderedlink').html("<audio src="+blobUrl+" controls preload=\"auto\" autobuffer></audio><br><a href="+blobUrl+">Right click here to Save As...</a>");
     }
 
+    function example(name)
+    {
+      var e = examples[name];
+      if(e != null)
+      {
+        editor.setValue(e);
+        editor.clearSelection();
+      }
+    }
+
     $(function() {
       editor.resize();
+      example('first');
     });
+
 </script>
 
 <br>
