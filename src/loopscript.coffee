@@ -224,6 +224,8 @@ class Parser
     if cmd == 'reset'
       if not @reset(tokens[1])
         return false
+    else if cmd == 'section'
+      @objectScopeReady = true
     else if @isObjectType(cmd)
       @createObject '_type', cmd, '_name', tokens[1]
     else if cmd == 'pattern'

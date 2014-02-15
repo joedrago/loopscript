@@ -44,6 +44,10 @@ var LoopScriptHighlightRules = function() {
                 regex: "^(\\s*)(tone|loop|track|sample)(\\s+)(\\S+)"
             },
             {
+                token: ["","keyword", "", "comment"],
+                regex: "^(\\s*)(section)(\\s+)(.*)"
+            },
+            {
                 token: ["","support.function", "", "string", "variable.parameter"],
                 regex: "^(\\s*)(pattern)(\\s+)(\\S+)(.*)"
             },
