@@ -112,7 +112,6 @@
 # Your first LoopScript. Someday there will be documentation!
 
 tone bass1
-  freq 62
   duration 800
   adsr 0.005 0.05 0.7 0.05
 
@@ -120,8 +119,8 @@ sample clap
   src samples/clap.wav
 
 loop loop1
-  pattern bass1 x.......x.......
-  pattern clap  ....x.......x...
+  pattern bass1 a...b...c...d...
+  pattern clap  ....Gg......x...
 
 track song
   pattern loop1 xxxx

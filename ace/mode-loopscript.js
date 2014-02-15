@@ -53,7 +53,7 @@ var LoopScriptHighlightRules = function() {
             },
             {
                 token: ["","support.function", "", "variable.parameter"],
-                regex: "^(\\s*)(bpm|freq|duration|src)(\\s+)(.+)"
+                regex: "^(\\s*)(bpm|freq|duration|src|octave|note)(\\s+)(.+)"
             }
         ]
     };

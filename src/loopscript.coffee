@@ -1,4 +1,11 @@
+# -------------------------------------------------------------------------------
+# Imports
+
 {makeBlobUrl} = require "riffwave"
+{findFreq}    = require 'freq'
+
+# -------------------------------------------------------------------------------
+# Helper functions
 
 clone = (obj) ->
   if not obj? or typeof obj isnt 'object'
@@ -21,6 +28,9 @@ clone = (obj) ->
     newInstance[key] = clone obj[key]
 
   return newInstance
+
+# -------------------------------------------------------------------------------
+# IndentStack - used by Parser
 
 class IndentStack
   constructor: ->
@@ -47,28 +57,41 @@ countIndent = (text) ->
       indent++
   return indent
 
+# -------------------------------------------------------------------------------
+# Parser
+
 class Parser
   constructor: (@log) ->
     @commentRegex = /^([^#]*?)(\s*#.*)?$/
     @onlyWhitespaceRegex = /^\s*$/
     @indentRegex = /^(\s*)(\S.*)$/
     @leadingUnderscoreRegex = /^_/
+    @hasCapitalLettersRegex = /[A-Z]/
+    @isNoteRegex = /[A-La-l]/
+
+    # H-L are the black keys:
+    #  H I   J K L
+    # C D E F G A B
 
     @namedStates =
       default:
         wave: 'sine'
-        freq: 440
         bpm: 120
         duration: 200
         beats: 4
-        adsr: [0, 0, 1, 1]
+        octave: 4
+        note: 'a'
+        adsr: [0, 0, 1, 1] # no-op ADSR (full 1.0 sustain)
 
+    # if a key is present in this map, that name is considered an "object"
     @objectKeys =
       tone:
         wave: 'string'
         freq: 'float'
         duration: 'float'
         adsr: 'adsr'
+        octave: 'int'
+        note: 'string'
 
       sample:
         src: 'string'
@@ -133,11 +156,12 @@ class Parser
       state = @flatten()
       for key of @objectKeys[@object._type]
         expectedType = @objectKeys[@object._type][key]
-        v = state[key]
-        @object[key] = switch expectedType
-          when 'int' then parseInt(v)
-          when 'float' then parseFloat(v)
-          else v
+        if state[key]?
+          v = state[key]
+          @object[key] = switch expectedType
+            when 'int' then parseInt(v)
+            when 'float' then parseFloat(v)
+            else v
       @objects[@object._name] = @object
     @object = null
 
@@ -165,6 +189,36 @@ class Parser
     @stateStack.pop()
     return true
 
+  parsePattern: (pattern) ->
+    overrideLength = @hasCapitalLettersRegex.test(pattern)
+    i = 0
+    sounds = []
+    while i < pattern.length
+      c = pattern[i]
+      if c != '.'
+        symbol = c.toLowerCase()
+        sound = { offset: i }
+        if @isNoteRegex.test(c)
+          sound.note = symbol
+        if overrideLength
+          length = 1
+          loop
+            next = pattern[i+1]
+            if next == symbol
+              length++
+              i++
+              if i == pattern.length
+                break
+            else
+              break
+          sound.length = length
+        sounds.push sound
+      i++
+    return {
+      length: pattern.length
+      sounds: sounds
+    }
+
   processTokens: (tokens) ->
     cmd = tokens[0].toLowerCase()
     if cmd == 'reset'
@@ -176,10 +230,10 @@ class Parser
       if not (@creatingObjectType('loop') or @creatingObjectType('track'))
         @error "unexpected pattern command"
         return false
-      @object._patterns.push {
-        src: tokens[1]
-        pattern: tokens[2]
-      }
+
+      pattern = @parsePattern(tokens[2])
+      pattern.src = tokens[1]
+      @object._patterns.push pattern
     else if cmd == 'adsr'
       @stateStack[@stateStack.length - 1][cmd] =
         a: parseFloat(tokens[1])
@@ -231,8 +285,12 @@ class Parser
     @finishObject()
     return true
 
+# -------------------------------------------------------------------------------
+# Renderer
+
 class Renderer
   constructor: (@log, @sampleRate, @objects) ->
+    @sampleCache = {}
 
   error: (text) ->
     @log "RENDER ERROR: #{text}"
@@ -262,14 +320,22 @@ class Renderer
       envelope[StoR + i] = sustain - (sustain * (i / releaseLen))
     return envelope
 
-  renderTone: (toneObj) ->
+  renderTone: (toneObj, overrides) ->
     offset = 0
     amplitude = 16000
-    length = Math.floor(toneObj.duration * @sampleRate / 1000)
+    if overrides.length > 0
+      length = overrides.length
+    else
+      length = Math.floor(toneObj.duration * @sampleRate / 1000)
     samples = Array(length)
     A = 200
     B = 0.5
-    freq = toneObj.freq
+    if overrides.note?
+      freq = findFreq(toneObj.octave, overrides.note)
+    else if toneObj.freq?
+      freq = toneObj.freq
+    else
+      freq = findFreq(toneObj.octave, toneObj.note)
     envelope = @generateEnvelope(toneObj.adsr, length)
     for i in [0...length]
       period = @sampleRate / freq
@@ -277,30 +343,6 @@ class Renderer
       # if(toneObj.wav == "square")
       #   sine = (sine > 0) ? 1 : -1
       samples[i] = sine * amplitude * envelope[i]
-    return samples
-
-  renderPatterns: (patterns, totalLength, calcSliceLength) ->
-    samples = Array(totalLength)
-    for i in [0...totalLength]
-      samples[i] = 0
-
-    for pattern in patterns
-      srcSamples = @render(pattern.src)
-      if calcSliceLength
-        sliceLength = Math.floor(totalLength / pattern.pattern.length)
-      else
-        sliceLength = srcSamples.length
-
-      for i in [0...pattern.pattern.length]
-        slice = pattern.pattern[i]
-        if slice != '.'
-          offset = i * sliceLength
-          copyLen = srcSamples.length
-          if (offset + copyLen) > totalLength
-            copyLen = totalLength - offset
-          for j in [0...copyLen]
-            samples[offset + j] += srcSamples[j]
-
     return samples
 
   renderSample: (sampleObj) ->
@@ -332,12 +374,38 @@ class Renderer
 
     return samples
 
+  renderPatterns: (patterns, totalLength, calcOffsetLength) ->
+    samples = Array(totalLength)
+    for i in [0...totalLength]
+      samples[i] = 0
+
+    for pattern in patterns
+      for sound in pattern.sounds
+        overrides = {}
+        offsetLength = Math.floor(totalLength / pattern.length)
+        if sound.length > 0
+          overrides.length = sound.length * offsetLength
+        if sound.note?
+          overrides.note = sound.note
+
+        srcSamples = @render(pattern.src, overrides)
+        if not calcOffsetLength
+          offsetLength = srcSamples.length
+
+        offset = sound.offset * offsetLength
+        copyLen = srcSamples.length
+        if (offset + copyLen) > totalLength
+          copyLen = totalLength - offset
+        for j in [0...copyLen]
+          samples[offset + j] += srcSamples[j]
+
+    return samples
 
   renderLoop: (loopObj) ->
     beatCount = 0
     for pattern in loopObj._patterns
-      if beatCount < pattern.pattern.length
-        beatCount = pattern.pattern.length
+      if beatCount < pattern.length
+        beatCount = pattern.length
 
     samplesPerBeat = @sampleRate / (loopObj.bpm / 60) / loopObj.beats
     loopLength = samplesPerBeat * beatCount
@@ -348,23 +416,36 @@ class Renderer
     trackLength = 0
     for pattern in trackObj._patterns
       srcSamples = @render(pattern.src)
-      patternLength = srcSamples.length * pattern.pattern.length
+      patternLength = srcSamples.length * pattern.length
       if trackLength < patternLength
         trackLength = patternLength
 
     return @renderPatterns(trackObj._patterns, trackLength, false)
 
-  render: (which) ->
+  calcCacheName: (type, which, overrides) ->
+    if type != 'tone'
+      return which
+
+    name = which
+    if overrides.note
+      name += "/N#{overrides.note}"
+    if overrides.length
+      name += "/L#{overrides.length}"
+
+    return name
+
+  render: (which, overrides) ->
     object = @objects[which]
     if not object
       @error "no such object #{which}"
       return null
 
-    if object._samples
-      return object._samples
+    cacheName = @calcCacheName(object._type, which, overrides)
+    if @sampleCache[cacheName]
+      return @sampleCache[cacheName]
 
     samples = switch object._type
-      when 'tone' then @renderTone(object)
+      when 'tone' then @renderTone(object, overrides)
       when 'loop' then @renderLoop(object)
       when 'track' then @renderTrack(object)
       when 'sample' then @renderSample(object)
@@ -372,9 +453,12 @@ class Renderer
         @error "unknown type #{object._type}"
         null
 
-    @log "Rendered #{which}."
-    object._samples = samples
+    @log "Rendered #{cacheName}."
+    @sampleCache[cacheName] = samples
     return samples
+
+# -------------------------------------------------------------------------------
+# Exports
 
 renderLoopScript = (loopscript, logCB) ->
   logCB "Parsing..."
