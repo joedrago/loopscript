@@ -1,7 +1,22 @@
 {
   "name": "loopscript",
-  "version": "0.0.1",
-  "private": true,
+  "description": "Makefiles for sound!",
+  "keywords": [
+    "language",
+    "compiler",
+    "audio"
+  ],
+  "author": "Joe Drago",
+  "version": "0.0.2",
+  "license": "Boost",
+  "engines": {
+    "node": ">=0.8.0"
+  },
+  "homepage": "http://loopscript.com/",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/joedrago/loopscript.git"
+  },
   "dependencies": {
     "browserify": "*",
     "coffeeify": "*",
