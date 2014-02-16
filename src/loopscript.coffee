@@ -1,8 +1,9 @@
 # -------------------------------------------------------------------------------
 # Imports
 
-{makeBlobUrl} = require "riffwave"
-{findFreq}    = require 'freq'
+{writeWAV, makeBlobUrl} = require "./riffwave"
+{findFreq}              = require './freq'
+fs                      = require 'fs'
 
 # -------------------------------------------------------------------------------
 # Helper functions
@@ -298,7 +299,7 @@ class Parser
 # Renderer
 
 class Renderer
-  constructor: (@log, @sampleRate, @objects) ->
+  constructor: (@log, @sampleRate, @readLocalFiles, @objects) ->
     @sampleCache = {}
 
   error: (text) ->
@@ -357,29 +358,34 @@ class Renderer
   renderSample: (sampleObj) ->
     view = null
 
-    $.ajax {
-      url: sampleObj.src
-      mimeType: 'text/plain; charset=x-user-defined'
-      success: (data) ->
-        console.log "data length #{data.length}"
-        view = new jDataView(data, 0, data.length, true)
-      async: false
-    }
+    if @readLocalFiles
+      if not jDataView?
+        jDataView = require './jDataView'
+      data = fs.readFileSync sampleObj.src
+      view = new jDataView(data, 0, data.length, true)
+    else
+      $.ajax {
+        url: sampleObj.src
+        mimeType: 'text/plain; charset=x-user-defined'
+        success: (data) ->
+          view = new jDataView(data, 0, data.length, true)
+        async: false
+      }
 
     if not view
       return []
 
-    console.log "#{sampleObj.src} is #{view.byteLength} in size"
+    # console.log "#{sampleObj.src} is #{view.byteLength} in size"
 
     # skip the first 40 bytes
     view.seek(40)
     subchunk2Size = view.getInt32()
-    console.log "subchunk2Size is #{subchunk2Size}"
+    # console.log "subchunk2Size is #{subchunk2Size}"
 
     samples = []
     while view.tell()+1 < view.byteLength
       samples.push view.getInt16()
-    console.log "looped #{samples.length} times"
+    # console.log "looped #{samples.length} times"
 
     for i in [0...samples.length]
       samples[i] *= sampleObj.volume
@@ -473,16 +479,22 @@ class Renderer
 # -------------------------------------------------------------------------------
 # Exports
 
-renderLoopScript = (loopscript, logCB) ->
+renderLoopScript = (args) ->
+  logCB = args.log
   logCB "Parsing..."
   parser = new Parser(logCB)
-  parser.parse loopscript
+  parser.parse args.script
 
-  if parser.lastObject
+  which = args.which
+  which ?= parser.lastObject
+
+  if which
     sampleRate = 44100
     logCB "Rendering..."
-    renderer = new Renderer(logCB, sampleRate, parser.objects)
-    outputSamples = renderer.render(parser.lastObject)
+    renderer = new Renderer(logCB, sampleRate, args.readLocalFiles, parser.objects)
+    outputSamples = renderer.render(parser.lastObject, {})
+    if args.outputFilename
+      return writeWAV args.outputFilename, sampleRate, outputSamples
     return makeBlobUrl(sampleRate, outputSamples)
 
   return null

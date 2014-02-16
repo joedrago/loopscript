@@ -12,7 +12,8 @@ modules = [
 # -------------------------------------------------------------------------------
 # List of things that might need to be require()'d, but aren't in our sources
 
-externals = [
+ignoreModules = [
+  './jDataView'
 ]
 
 # -------------------------------------------------------------------------------
@@ -23,6 +24,11 @@ fs         = require 'fs'
 util       = require 'util'
 watch      = require 'node-watch'
 http       = require 'http'
+{spawn}    = require 'child_process'
+
+coffeeName = 'coffee'
+if process.platform == 'win32'
+  coffeeName += '.cmd'
 
 generateJSBundle = (cb) ->
   name = "loopscript"
@@ -33,9 +39,9 @@ generateJSBundle = (cb) ->
   }
   b.transform 'coffeeify'
   for module in modules
-    b.require('../src/' + module + '.coffee', { expose: module })
-  for ext in externals
-    b.external ext
+    b.require('../src/' + module + '.coffee', { expose: "./#{module}" })
+  for ext in ignoreModules
+    b.ignore ext
   outputFilename = "#{outputDir}#{name}.js"
   bundlePipe = b.bundle({ debug: true })
     .on 'error', (err) ->
@@ -47,13 +53,24 @@ generateJSBundle = (cb) ->
         util.log "Generated #{outputFilename}"
         cb() if cb?
 
+generateJSLib = (callback) ->
+  coffee = spawn coffeeName, ['-c', '-o', 'cli', 'src']
+  coffee.stderr.on 'data', (data) ->
+    process.stderr.write data.toString()
+  coffee.stdout.on 'data', (data) ->
+    print data.toString()
+  coffee.on 'exit', (code) ->
+    util.log "Generated CLI lib dir"
+    callback?() if code is 0
+
 buildEverything = (cb) ->
   generateJSBundle ->
-    util.log "Build complete."
-    cb() if cb
+    generateJSLib ->
+      cb() if cb
 
 task 'build', 'build html', (options) ->
-  buildEverything()
+  buildEverything ->
+    util.log "Build complete."
 
 option '-p', '--port [PORT]', 'Dev server port'
 
@@ -74,4 +91,4 @@ task 'server', 'Run server and watch for changed source files to automatically r
 
     watch 'src', (filename) ->
       util.log "Source code #{filename} changed, regenerating bundle..."
-      generateJSBundle()
+      buildEverything()

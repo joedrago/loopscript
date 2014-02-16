@@ -141,15 +141,18 @@ Compile output:<br>
     editor.getSession().setMode("ace/mode/loopscript");
     editor.setHighlightActiveLine(false);
 
-    var loopscript = require("loopscript");
-    var examples = require("examples");
+    var loopscript = require("./loopscript");
+    var examples = require("./examples");
     function render()
     {
       var scriptText = editor.getValue();
-      var blobUrl = loopscript.render(scriptText, function(text) {
-        $('#output').append(text + "<br>");
-        var o = document.getElementById("output");
-        o.scrollTop = o.scrollHeight;
+      var blobUrl = loopscript.render({
+          script: scriptText,
+          log: function(text) {
+            $('#output').append(text + "<br>");
+            var o = document.getElementById("output");
+            o.scrollTop = o.scrollHeight;
+          }
       });
       $('#renderedlink').html("<audio src="+blobUrl+" controls preload=\"auto\" autobuffer></audio><br><a href="+blobUrl+">Right click here to Save As...</a>");
     }
