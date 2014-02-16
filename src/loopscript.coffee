@@ -1,9 +1,10 @@
 # -------------------------------------------------------------------------------
 # Imports
 
-{writeWAV, makeBlobUrl} = require "./riffwave"
-{findFreq}              = require './freq'
-fs                      = require 'fs'
+{findFreq} = require './freq'
+riffwave   = require "./riffwave"
+jDataView  = require '../js/jdataview'
+fs         = require 'fs'
 
 # -------------------------------------------------------------------------------
 # Helper functions
@@ -121,7 +122,7 @@ class Parser
     return @objectKeys[type]?
 
   error: (text) ->
-    @log "PARSE ERROR, line #{@lineNo}: #{text}"
+    @log.error "PARSE ERROR, line #{@lineNo}: #{text}"
 
   reset: (name) ->
     name ?= 'default'
@@ -140,7 +141,7 @@ class Parser
 
   trace: (prefix) ->
     prefix ?= ''
-    @log "trace: #{prefix} " + JSON.stringify(@flatten())
+    @log.verbose "trace: #{prefix} " + JSON.stringify(@flatten())
 
   createObject: (data...) ->
       @finishObject()
@@ -280,7 +281,7 @@ class Parser
       else
         loop
           if not @indentStack.pop()
-            @log "Unexpected indent #{indent} on line #{lineNo}: #{line}"
+            @log.error "Unexpected indent #{indent} on line #{lineNo}: #{line}"
             return false
           if not @popScope()
             return false
@@ -303,7 +304,7 @@ class Renderer
     @sampleCache = {}
 
   error: (text) ->
-    @log "RENDER ERROR: #{text}"
+    @log.error "RENDER ERROR: #{text}"
 
   generateEnvelope: (adsr, length) ->
     envelope = Array(length)
@@ -359,8 +360,6 @@ class Renderer
     view = null
 
     if @readLocalFiles
-      if not jDataView?
-        jDataView = require './jDataView'
       data = fs.readFileSync sampleObj.src
       view = new jDataView(data, 0, data.length, true)
     else
@@ -472,7 +471,7 @@ class Renderer
         @error "unknown type #{object._type}"
         null
 
-    @log "Rendered #{cacheName}."
+    @log.verbose "Rendered #{cacheName}."
     @sampleCache[cacheName] = samples
     return samples
 
@@ -480,9 +479,9 @@ class Renderer
 # Exports
 
 renderLoopScript = (args) ->
-  logCB = args.log
-  logCB "Parsing..."
-  parser = new Parser(logCB)
+  logObj = args.log
+  logObj.verbose "Parsing..."
+  parser = new Parser(logObj)
   parser.parse args.script
 
   which = args.which
@@ -490,12 +489,12 @@ renderLoopScript = (args) ->
 
   if which
     sampleRate = 44100
-    logCB "Rendering..."
-    renderer = new Renderer(logCB, sampleRate, args.readLocalFiles, parser.objects)
-    outputSamples = renderer.render(parser.lastObject, {})
+    logObj.verbose "Rendering..."
+    renderer = new Renderer(logObj, sampleRate, args.readLocalFiles, parser.objects)
+    outputSamples = renderer.render(which, {})
     if args.outputFilename
-      return writeWAV args.outputFilename, sampleRate, outputSamples
-    return makeBlobUrl(sampleRate, outputSamples)
+      return riffwave.writeWAV args.outputFilename, sampleRate, outputSamples
+    return riffwave.makeBlobUrl(sampleRate, outputSamples)
 
   return null
 

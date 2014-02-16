@@ -7,10 +7,13 @@
     "audio"
   ],
   "author": "Joe Drago",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "license": "Boost",
   "engines": {
     "node": ">=0.8.0"
+  },
+  "bin": {
+    "loopscript": "./bin/loopscript"
   },
   "homepage": "http://loopscript.com/",
   "repository": {
@@ -23,5 +26,8 @@
     "mold-source-map": "*",
     "node-watch": "*",
     "node-static": "*"
+  },
+  "dependencies": {
+    "minimist": "*"
   }
 }

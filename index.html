@@ -133,7 +133,6 @@ Compile output:<br>
 
 <script src="ace/ace.js" type="text/javascript" charset="utf-8"></script>
 <script src="js/jquery-1.11.0.min.js" type="text/javascript" charset="utf-8"></script>
-<script src="js/jdataview.js" type="text/javascript" charset="utf-8"></script>
 <script src="js/loopscript.js" type="text/javascript" charset="utf-8"></script>
 <script>
     var editor = ace.edit("editor");
@@ -148,10 +147,17 @@ Compile output:<br>
       var scriptText = editor.getValue();
       var blobUrl = loopscript.render({
           script: scriptText,
-          log: function(text) {
-            $('#output').append(text + "<br>");
-            var o = document.getElementById("output");
-            o.scrollTop = o.scrollHeight;
+          log: {
+            verbose: function(text) {
+              $('#output').append(text + "<br>");
+              var o = document.getElementById("output");
+              o.scrollTop = o.scrollHeight;
+            },
+            error: function(text) {
+              $('#output').append("<span class=\"error\">" + text + "</span><br>");
+              var o = document.getElementById("output");
+              o.scrollTop = o.scrollHeight;
+            }
           }
       });
       $('#renderedlink').html("<audio src="+blobUrl+" controls preload=\"auto\" autobuffer></audio><br><a href="+blobUrl+">Right click here to Save As...</a>");

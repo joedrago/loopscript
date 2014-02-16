@@ -10,13 +10,6 @@ modules = [
 ]
 
 # -------------------------------------------------------------------------------
-# List of things that might need to be require()'d, but aren't in our sources
-
-ignoreModules = [
-  './jDataView'
-]
-
-# -------------------------------------------------------------------------------
 # Build scripts
 
 browserify = require 'browserify'
@@ -40,8 +33,6 @@ generateJSBundle = (cb) ->
   b.transform 'coffeeify'
   for module in modules
     b.require('../src/' + module + '.coffee', { expose: "./#{module}" })
-  for ext in ignoreModules
-    b.ignore ext
   outputFilename = "#{outputDir}#{name}.js"
   bundlePipe = b.bundle({ debug: true })
     .on 'error', (err) ->
