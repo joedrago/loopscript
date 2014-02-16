@@ -81,7 +81,11 @@ class Parser
         beats: 4
         octave: 4
         note: 'a'
-        adsr: [0, 0, 1, 1] # no-op ADSR (full 1.0 sustain)
+        adsr: # no-op ADSR (full 1.0 sustain)
+          a: 0
+          d: 0
+          s: 1
+          r: 1
 
     # if a key is present in this map, that name is considered an "object"
     @objectKeys =
@@ -384,7 +388,8 @@ class Renderer
     for pattern in patterns
       for sound in pattern.sounds
         overrides = {}
-        offsetLength = Math.floor(totalLength / pattern.length)
+        sectionCount = pattern.length / 16
+        offsetLength = Math.floor(totalLength / 16 / sectionCount)
         if sound.length > 0
           overrides.length = sound.length * offsetLength
         if sound.note?
