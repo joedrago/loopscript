@@ -81,6 +81,7 @@ class Parser
         beats: 4
         octave: 4
         note: 'a'
+        volume: 1.0
         adsr: # no-op ADSR (full 1.0 sustain)
           a: 0
           d: 0
@@ -96,9 +97,11 @@ class Parser
         adsr: 'adsr'
         octave: 'int'
         note: 'string'
+        volume: 'float'
 
       sample:
         src: 'string'
+        volume: 'float'
 
       loop:
         bpm: 'int'
@@ -348,7 +351,7 @@ class Renderer
       sine = Math.sin(offset + i / period * 2 * Math.PI)
       # if(toneObj.wav == "square")
       #   sine = (sine > 0) ? 1 : -1
-      samples[i] = sine * amplitude * envelope[i]
+      samples[i] = sine * amplitude * envelope[i] * toneObj.volume
     return samples
 
   renderSample: (sampleObj) ->
@@ -377,6 +380,9 @@ class Renderer
     while view.tell()+1 < view.byteLength
       samples.push view.getInt16()
     console.log "looped #{samples.length} times"
+
+    for i in [0...samples.length]
+      samples[i] *= sampleObj.volume
 
     return samples
 
