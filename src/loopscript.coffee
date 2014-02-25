@@ -93,6 +93,9 @@ class Parser
         note: 'a'
         volume: 1.0
         clip: true
+        reverb:
+          delay: 0
+          decay: 0
         adsr: # no-op ADSR (full 1.0 sustain)
           a: 0
           d: 0
@@ -110,11 +113,13 @@ class Parser
         note: 'string'
         volume: 'float'
         clip: 'bool'
+        reverb: 'reverb'
 
       sample:
         src: 'string'
         volume: 'float'
         clip: 'bool'
+        reverb: 'reverb'
 
       loop:
         bpm: 'int'
@@ -266,6 +271,10 @@ class Parser
         d: parseFloat(tokens[2])
         s: parseFloat(tokens[3])
         r: parseFloat(tokens[4])
+    else if cmd == 'reverb'
+      @stateStack[@stateStack.length - 1][cmd] =
+        delay: parseInt(tokens[1])
+        decay: parseFloat(tokens[2])
     else
       # The boring regular case: stash off this value
       if @leadingUnderscoreRegex.test(cmd)
@@ -318,7 +327,7 @@ class Parser
 # associated with the sound. "sound.length" is the "expected" length, with regards
 # to the typed-in duration for it or for determining loop offets. The other length
 # is the sound.samples.length (also known as the "overflow length"), which is the
-# length that accounts for things like echo or anything else that would cause the
+# length that accounts for things like reverb or anything else that would cause the
 # sound to spill into the next loop/track. This allows for seamless loops that can
 # play a long sound as the end of a pattern, and it'll cleanly mix into the beginning
 # of the next pattern.
@@ -377,7 +386,7 @@ class Renderer
       sine = Math.sin(offset + i / period * 2 * Math.PI)
       # if(toneObj.wav == "square")
       #   sine = (sine > 0) ? 1 : -1
-      samples[i] = sine * amplitude * envelope[i] * toneObj.volume
+      samples[i] = sine * amplitude * envelope[i]
     return {
       samples: samples
       length: samples.length
@@ -410,9 +419,6 @@ class Renderer
     samples = []
     while view.tell()+1 < view.byteLength
       samples.push view.getInt16()
-
-    for i in [0...samples.length]
-      samples[i] *= sampleObj.volume
 
     return {
       samples: samples
@@ -510,10 +516,6 @@ class Renderer
         overflowLength = possibleMaxLength
       totalLength += pieceTotalLength[pieceIndex]
 
-    # @log.verbose "pieceTotalLength: " + JSON.stringify(pieceTotalLength)
-    # @log.verbose "pieceOverflowLength: " + JSON.stringify(pieceOverflowLength)
-    # @log.verbose "totalLength: #{totalLength}, overflowLength: #{overflowLength}"
-
     samples = Array(overflowLength)
     for i in [0...overflowLength]
       samples[i] = 0
@@ -572,6 +574,26 @@ class Renderer
       else
         @error "unknown type #{object._type}"
         null
+
+    # Volume
+    if object.volume? and (object.volume != 1.0)
+      for i in [0...sound.samples.length]
+        sound.samples[i] *= object.volume
+
+    # Reverb
+    if object.reverb? and (object.reverb.delay > 0)
+      delaySamples = Math.floor(object.reverb.delay * @sampleRate / 1000)
+      if sound.samples.length > delaySamples
+        totalLength = sound.samples.length + (delaySamples * 8) # this *8 is totally wrong. Needs more thought.
+        @log.verbose "reverbing #{cacheName}: #{delaySamples}. length update #{sound.samples.length} -> #{totalLength}"
+        samples = Array(totalLength)
+        for i in [0...sound.samples.length]
+          samples[i] = sound.samples[i]
+        for i in [sound.samples.length...totalLength]
+          samples[i] = 0
+        for i in [0...(totalLength - delaySamples)]
+          samples[i + delaySamples] += Math.floor(samples[i] * object.reverb.decay)
+        sound.samples = samples
 
     @log.verbose "Rendered #{cacheName}."
     @soundCache[cacheName] = sound

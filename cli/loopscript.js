@@ -114,6 +114,10 @@
           note: 'a',
           volume: 1.0,
           clip: true,
+          reverb: {
+            delay: 0,
+            decay: 0
+          },
           adsr: {
             a: 0,
             d: 0,
@@ -131,12 +135,14 @@
           octave: 'int',
           note: 'string',
           volume: 'float',
-          clip: 'bool'
+          clip: 'bool',
+          reverb: 'reverb'
         },
         sample: {
           src: 'string',
           volume: 'float',
-          clip: 'bool'
+          clip: 'bool',
+          reverb: 'reverb'
         },
         loop: {
           bpm: 'int',
@@ -346,6 +352,11 @@
           s: parseFloat(tokens[3]),
           r: parseFloat(tokens[4])
         };
+      } else if (cmd === 'reverb') {
+        this.stateStack[this.stateStack.length - 1][cmd] = {
+          delay: parseInt(tokens[1]),
+          decay: parseFloat(tokens[2])
+        };
       } else {
         if (this.leadingUnderscoreRegex.test(cmd)) {
           this.error("cannot set internal names (underscore prefix)");
@@ -470,7 +481,7 @@
       for (i = _i = 0; 0 <= length ? _i < length : _i > length; i = 0 <= length ? ++_i : --_i) {
         period = this.sampleRate / freq;
         sine = Math.sin(offset + i / period * 2 * Math.PI);
-        samples[i] = sine * amplitude * envelope[i] * toneObj.volume;
+        samples[i] = sine * amplitude * envelope[i];
       }
       return {
         samples: samples,
@@ -479,7 +490,7 @@
     };
 
     Renderer.prototype.renderSample = function(sampleObj) {
-      var data, i, samples, subchunk2Size, view, _i, _ref;
+      var data, samples, subchunk2Size, view;
       view = null;
       if (this.readLocalFiles) {
         data = fs.readFileSync(sampleObj.src);
@@ -505,9 +516,6 @@
       samples = [];
       while (view.tell() + 1 < view.byteLength) {
         samples.push(view.getInt16());
-      }
-      for (i = _i = 0, _ref = samples.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
-        samples[i] *= sampleObj.volume;
       }
       return {
         samples: samples,
@@ -690,7 +698,7 @@
     };
 
     Renderer.prototype.render = function(which, overrides) {
-      var cacheName, object, sound;
+      var cacheName, delaySamples, i, object, samples, sound, totalLength, _i, _j, _k, _l, _ref, _ref1, _ref2, _ref3;
       object = this.getObject(which);
       if (!object) {
         return null;
@@ -714,6 +722,29 @@
             return null;
         }
       }).call(this);
+      if ((object.volume != null) && (object.volume !== 1.0)) {
+        for (i = _i = 0, _ref = sound.samples.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+          sound.samples[i] *= object.volume;
+        }
+      }
+      if ((object.reverb != null) && (object.reverb.delay > 0)) {
+        delaySamples = Math.floor(object.reverb.delay * this.sampleRate / 1000);
+        if (sound.samples.length > delaySamples) {
+          totalLength = sound.samples.length + (delaySamples * 8);
+          this.log.verbose("reverbing " + cacheName + ": " + delaySamples + ". length update " + sound.samples.length + " -> " + totalLength);
+          samples = Array(totalLength);
+          for (i = _j = 0, _ref1 = sound.samples.length; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; i = 0 <= _ref1 ? ++_j : --_j) {
+            samples[i] = sound.samples[i];
+          }
+          for (i = _k = _ref2 = sound.samples.length; _ref2 <= totalLength ? _k < totalLength : _k > totalLength; i = _ref2 <= totalLength ? ++_k : --_k) {
+            samples[i] = 0;
+          }
+          for (i = _l = 0, _ref3 = totalLength - delaySamples; 0 <= _ref3 ? _l < _ref3 : _l > _ref3; i = 0 <= _ref3 ? ++_l : --_l) {
+            samples[i + delaySamples] += Math.floor(samples[i] * object.reverb.decay);
+          }
+          sound.samples = samples;
+        }
+      }
       this.log.verbose("Rendered " + cacheName + ".");
       this.soundCache[cacheName] = sound;
       return sound;

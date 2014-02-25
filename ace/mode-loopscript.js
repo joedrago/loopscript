@@ -53,7 +53,7 @@ var LoopScriptHighlightRules = function() {
             },
             {
                 token: ["","support.function", "", "variable.parameter"],
-                regex: "^(\\s*)(adsr)(\\s+)(.*)"
+                regex: "^(\\s*)(adsr|reverb)(\\s+)(.*)"
             },
             {
                 token: ["","support.function", "", "variable.parameter"],
