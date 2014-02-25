@@ -731,7 +731,6 @@
         delaySamples = Math.floor(object.reverb.delay * this.sampleRate / 1000);
         if (sound.samples.length > delaySamples) {
           totalLength = sound.samples.length + (delaySamples * 8);
-          this.log.verbose("reverbing " + cacheName + ": " + delaySamples + ". length update " + sound.samples.length + " -> " + totalLength);
           samples = Array(totalLength);
           for (i = _j = 0, _ref1 = sound.samples.length; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; i = 0 <= _ref1 ? ++_j : --_j) {
             samples[i] = sound.samples[i];

@@ -585,7 +585,7 @@ class Renderer
       delaySamples = Math.floor(object.reverb.delay * @sampleRate / 1000)
       if sound.samples.length > delaySamples
         totalLength = sound.samples.length + (delaySamples * 8) # this *8 is totally wrong. Needs more thought.
-        @log.verbose "reverbing #{cacheName}: #{delaySamples}. length update #{sound.samples.length} -> #{totalLength}"
+        # @log.verbose "reverbing #{cacheName}: #{delaySamples}. length update #{sound.samples.length} -> #{totalLength}"
         samples = Array(totalLength)
         for i in [0...sound.samples.length]
           samples[i] = sound.samples[i]
