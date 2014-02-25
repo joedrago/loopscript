@@ -31,6 +31,14 @@ clone = (obj) ->
 
   return newInstance
 
+parseBool = (v) ->
+  switch String(v)
+    when "true" then true
+    when "yes" then true
+    when "on" then true
+    when "1" then true
+    else !!v
+
 # -------------------------------------------------------------------------------
 # IndentStack - used by Parser
 
@@ -84,6 +92,7 @@ class Parser
         octave: 4
         note: 'a'
         volume: 1.0
+        clip: true
         adsr: # no-op ADSR (full 1.0 sustain)
           a: 0
           d: 0
@@ -100,10 +109,12 @@ class Parser
         octave: 'int'
         note: 'string'
         volume: 'float'
+        clip: 'bool'
 
       sample:
         src: 'string'
         volume: 'float'
+        clip: 'bool'
 
       loop:
         bpm: 'int'
@@ -170,6 +181,7 @@ class Parser
           @object[key] = switch expectedType
             when 'int' then parseInt(v)
             when 'float' then parseFloat(v)
+            when 'bool' then parseBool(v)
             else v
       @objects[@object._name] = @object
     @object = null
@@ -391,12 +403,20 @@ class Renderer
 
     return samples
 
-  renderPatterns: (patterns, totalLength, calcOffsetLength) ->
+  renderLoop: (loopObj) ->
+    beatCount = 0
+    for pattern in loopObj._patterns
+      if beatCount < pattern.length
+        beatCount = pattern.length
+
+    samplesPerBeat = @sampleRate / (loopObj.bpm / 60) / loopObj.beats
+    totalLength = samplesPerBeat * beatCount
+
     samples = Array(totalLength)
     for i in [0...totalLength]
       samples[i] = 0
 
-    for pattern in patterns
+    for pattern in loopObj._patterns
       for sound in pattern.sounds
         overrides = {}
         sectionCount = pattern.length / 16
@@ -405,10 +425,7 @@ class Renderer
           overrides.length = sound.length * offsetLength
         if sound.note?
           overrides.note = sound.note
-
         srcSamples = @render(pattern.src, overrides)
-        if not calcOffsetLength
-          offsetLength = srcSamples.length
 
         offset = sound.offset * offsetLength
         copyLen = srcSamples.length
@@ -419,26 +436,30 @@ class Renderer
 
     return samples
 
-  renderLoop: (loopObj) ->
-    beatCount = 0
-    for pattern in loopObj._patterns
-      if beatCount < pattern.length
-        beatCount = pattern.length
-
-    samplesPerBeat = @sampleRate / (loopObj.bpm / 60) / loopObj.beats
-    loopLength = samplesPerBeat * beatCount
-
-    return @renderPatterns(loopObj._patterns, loopLength, true)
-
   renderTrack: (trackObj) ->
-    trackLength = 0
+    totalLength = 0
     for pattern in trackObj._patterns
       srcSamples = @render(pattern.src)
       patternLength = srcSamples.length * pattern.length
-      if trackLength < patternLength
-        trackLength = patternLength
+      if totalLength < patternLength
+        totalLength = patternLength
 
-    return @renderPatterns(trackObj._patterns, trackLength, false)
+    samples = Array(totalLength)
+    for i in [0...totalLength]
+      samples[i] = 0
+
+    for pattern in trackObj._patterns
+      for sound in pattern.sounds
+        overrides = {}
+        srcSamples = @render(pattern.src, overrides)
+        offset = sound.offset * srcSamples.length
+        copyLen = srcSamples.length
+        if (offset + copyLen) > totalLength
+          copyLen = totalLength - offset
+        for j in [0...copyLen]
+          samples[offset + j] += srcSamples[j]
+
+    return samples
 
   calcCacheName: (type, which, overrides) ->
     if type != 'tone'
