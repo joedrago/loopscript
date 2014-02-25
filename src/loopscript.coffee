@@ -37,7 +37,7 @@ parseBool = (v) ->
     when "yes" then true
     when "on" then true
     when "1" then true
-    else !!v
+    else false
 
 # -------------------------------------------------------------------------------
 # IndentStack - used by Parser
@@ -183,6 +183,8 @@ class Parser
             when 'float' then parseFloat(v)
             when 'bool' then parseBool(v)
             else v
+          # @log.verbose "setting #{@object._name}'s #{key} to " + JSON.stringify(@object[key])
+
       @objects[@object._name] = @object
     @object = null
 
@@ -236,6 +238,7 @@ class Parser
         sounds.push sound
       i++
     return {
+      pattern: pattern
       length: pattern.length
       sounds: sounds
     }
@@ -345,7 +348,7 @@ class Renderer
 
   renderTone: (toneObj, overrides) ->
     offset = 0
-    amplitude = 16000
+    amplitude = 10000
     if overrides.length > 0
       length = overrides.length
     else
@@ -417,6 +420,10 @@ class Renderer
       samples[i] = 0
 
     for pattern in loopObj._patterns
+      patternSamples = Array(totalLength)
+      for i in [0...totalLength]
+        patternSamples[i] = 0
+
       for sound in pattern.sounds
         overrides = {}
         sectionCount = pattern.length / 16
@@ -427,37 +434,62 @@ class Renderer
           overrides.note = sound.note
         srcSamples = @render(pattern.src, overrides)
 
+        obj = @getObject(pattern.src)
         offset = sound.offset * offsetLength
         copyLen = srcSamples.length
         if (offset + copyLen) > totalLength
           copyLen = totalLength - offset
-        for j in [0...copyLen]
-          samples[offset + j] += srcSamples[j]
+        if obj.clip
+          fadeClip = 200 # fade out over this many samples prior to a clip to avoid a pop
+          if offset > fadeClip
+            for j in [0...fadeClip]
+              v = patternSamples[offset - fadeClip + j]
+              patternSamples[offset - fadeClip + j] = Math.floor(v * ((fadeClip - j) / fadeClip))
+          for j in [0...copyLen]
+            patternSamples[offset + j] = srcSamples[j]
+        else
+          for j in [0...copyLen]
+            patternSamples[offset + j] += srcSamples[j]
+
+      # Now copy the clipped pattern into the final loop
+      for j in [0...totalLength]
+        samples[j] += patternSamples[j]
 
     return samples
 
   renderTrack: (trackObj) ->
-    totalLength = 0
+    pieceCount = 0
     for pattern in trackObj._patterns
-      srcSamples = @render(pattern.src)
-      patternLength = srcSamples.length * pattern.length
-      if totalLength < patternLength
-        totalLength = patternLength
+      if pieceCount < pattern.pattern.length
+        pieceCount = pattern.pattern.length
+
+    totalLength = 0
+    pieceLengths = Array(pieceCount)
+    for pieceIndex in [0...pieceCount]
+      pieceLengths[pieceIndex] = 0
+      for pattern in trackObj._patterns
+        if (pieceIndex < pattern.pattern.length) and (pattern.pattern[pieceIndex] != '.')
+          srcSamples = @render(pattern.src)
+          if pieceLengths[pieceIndex] < srcSamples.length
+            pieceLengths[pieceIndex] = srcSamples.length
+      totalLength += pieceLengths[pieceIndex]
 
     samples = Array(totalLength)
     for i in [0...totalLength]
       samples[i] = 0
 
     for pattern in trackObj._patterns
-      for sound in pattern.sounds
-        overrides = {}
-        srcSamples = @render(pattern.src, overrides)
-        offset = sound.offset * srcSamples.length
-        copyLen = srcSamples.length
-        if (offset + copyLen) > totalLength
-          copyLen = totalLength - offset
-        for j in [0...copyLen]
-          samples[offset + j] += srcSamples[j]
+      trackOffset = 0
+      srcSamples = @render(pattern.src, {})
+      for pieceIndex in [0...pieceCount]
+        if (pieceIndex < pattern.pattern.length) and (pattern.pattern[pieceIndex] != '.')
+          copyLen = srcSamples.length
+          if (trackOffset + copyLen) > totalLength
+            copyLen = totalLength - trackOffset
+          for j in [0...copyLen]
+            samples[trackOffset + j] += srcSamples[j]
+
+        trackOffset += pieceLengths[pieceIndex]
 
     return samples
 
@@ -473,10 +505,16 @@ class Renderer
 
     return name
 
-  render: (which, overrides) ->
+  getObject: (which) ->
     object = @objects[which]
     if not object
       @error "no such object #{which}"
+      return null
+    return object
+
+  render: (which, overrides) ->
+    object = @getObject(which)
+    if not object
       return null
 
     cacheName = @calcCacheName(object._type, which, overrides)
