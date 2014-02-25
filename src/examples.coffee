@@ -42,7 +42,6 @@ loop loop1
 # An approximation of the beat from Drake's "The Motto"
 
 bpm 100
-
 section Bass (in a section to share ADSR)
   adsr 0.005 0.05 0.7 0.05
   tone bass1
@@ -57,7 +56,6 @@ sample snare
 sample hihat
   src samples/hihat.wav
 
-# TODO: fix snare pattern to match song
 loop loop1
   pattern hihat ..x.......x.......x.......x.....
   pattern clap  ....x.......x.......x.......x...
@@ -96,4 +94,25 @@ track song
   pattern loop1 x.
   pattern loop2 .x
 
+"""
+
+  chocobo: """
+# ------------------------------------------------------------
+# The Chocobo Theme (first part only)
+
+bpm 125
+
+section Tone (in a section to share ADSR)
+  adsr 0.005 0.05 0.7 0.05
+  tone chocobo1
+    octave 5
+  tone chocobo2
+    octave 4
+
+loop loop1
+ pattern chocobo1 Dddd......Dd..........................................D.E.Ffffff...
+ pattern chocobo2 ....BbGgEe..BbGgBb..Gg..Bbbbbb.AaGgGAG.F.Gggggg.F.GgGB.............
+
+track song
+  pattern loop1 xx
 """
