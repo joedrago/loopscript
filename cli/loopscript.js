@@ -413,7 +413,7 @@
       this.sampleRate = sampleRate;
       this.readLocalFiles = readLocalFiles;
       this.objects = objects;
-      this.sampleCache = {};
+      this.soundCache = {};
     }
 
     Renderer.prototype.error = function(text) {
@@ -472,7 +472,10 @@
         sine = Math.sin(offset + i / period * 2 * Math.PI);
         samples[i] = sine * amplitude * envelope[i] * toneObj.volume;
       }
-      return samples;
+      return {
+        samples: samples,
+        length: samples.length
+      };
     };
 
     Renderer.prototype.renderSample = function(sampleObj) {
@@ -492,7 +495,10 @@
         });
       }
       if (!view) {
-        return [];
+        return {
+          samples: [],
+          length: 0
+        };
       }
       view.seek(40);
       subchunk2Size = view.getInt32();
@@ -503,11 +509,14 @@
       for (i = _i = 0, _ref = samples.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
         samples[i] *= sampleObj.volume;
       }
-      return samples;
+      return {
+        samples: samples,
+        length: samples.length
+      };
     };
 
     Renderer.prototype.renderLoop = function(loopObj) {
-      var beatCount, copyLen, fadeClip, i, j, obj, offset, offsetLength, overrides, pattern, patternSamples, samples, samplesPerBeat, sectionCount, sound, srcSamples, totalLength, v, _i, _j, _k, _l, _len, _len1, _len2, _m, _n, _o, _p, _q, _ref, _ref1, _ref2;
+      var beatCount, copyLen, fadeClip, i, j, obj, offset, offsetLength, overrides, pattern, patternSamples, samples, samplesPerBeat, sectionCount, sound, srcSound, totalLength, v, _i, _j, _k, _l, _len, _len1, _len2, _m, _n, _o, _p, _q, _ref, _ref1, _ref2;
       beatCount = 0;
       _ref = loopObj._patterns;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -541,10 +550,10 @@
           if (sound.note != null) {
             overrides.note = sound.note;
           }
-          srcSamples = this.render(pattern.src, overrides);
+          srcSound = this.render(pattern.src, overrides);
           obj = this.getObject(pattern.src);
           offset = sound.offset * offsetLength;
-          copyLen = srcSamples.length;
+          copyLen = srcSound.length;
           if ((offset + copyLen) > totalLength) {
             copyLen = totalLength - offset;
           }
@@ -557,11 +566,11 @@
               }
             }
             for (j = _o = 0; 0 <= copyLen ? _o < copyLen : _o > copyLen; j = 0 <= copyLen ? ++_o : --_o) {
-              patternSamples[offset + j] = srcSamples[j];
+              patternSamples[offset + j] = srcSound.samples[j];
             }
           } else {
             for (j = _p = 0; 0 <= copyLen ? _p < copyLen : _p > copyLen; j = 0 <= copyLen ? ++_p : --_p) {
-              patternSamples[offset + j] += srcSamples[j];
+              patternSamples[offset + j] += srcSound.samples[j];
             }
           }
         }
@@ -569,11 +578,14 @@
           samples[j] += patternSamples[j];
         }
       }
-      return samples;
+      return {
+        samples: samples,
+        length: samples.length
+      };
     };
 
     Renderer.prototype.renderTrack = function(trackObj) {
-      var copyLen, i, j, pattern, pieceCount, pieceIndex, pieceLengths, samples, srcSamples, totalLength, trackOffset, _i, _j, _k, _l, _len, _len1, _len2, _m, _n, _o, _ref, _ref1, _ref2;
+      var copyLen, i, j, pattern, pieceCount, pieceIndex, pieceLengths, samples, srcSound, totalLength, trackOffset, _i, _j, _k, _l, _len, _len1, _len2, _m, _n, _o, _ref, _ref1, _ref2;
       pieceCount = 0;
       _ref = trackObj._patterns;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -590,9 +602,9 @@
         for (_k = 0, _len1 = _ref1.length; _k < _len1; _k++) {
           pattern = _ref1[_k];
           if ((pieceIndex < pattern.pattern.length) && (pattern.pattern[pieceIndex] !== '.')) {
-            srcSamples = this.render(pattern.src);
-            if (pieceLengths[pieceIndex] < srcSamples.length) {
-              pieceLengths[pieceIndex] = srcSamples.length;
+            srcSound = this.render(pattern.src);
+            if (pieceLengths[pieceIndex] < srcSound.length) {
+              pieceLengths[pieceIndex] = srcSound.length;
             }
           }
         }
@@ -606,21 +618,24 @@
       for (_m = 0, _len2 = _ref2.length; _m < _len2; _m++) {
         pattern = _ref2[_m];
         trackOffset = 0;
-        srcSamples = this.render(pattern.src, {});
+        srcSound = this.render(pattern.src, {});
         for (pieceIndex = _n = 0; 0 <= pieceCount ? _n < pieceCount : _n > pieceCount; pieceIndex = 0 <= pieceCount ? ++_n : --_n) {
           if ((pieceIndex < pattern.pattern.length) && (pattern.pattern[pieceIndex] !== '.')) {
-            copyLen = srcSamples.length;
+            copyLen = srcSound.length;
             if ((trackOffset + copyLen) > totalLength) {
               copyLen = totalLength - trackOffset;
             }
             for (j = _o = 0; 0 <= copyLen ? _o < copyLen : _o > copyLen; j = 0 <= copyLen ? ++_o : --_o) {
-              samples[trackOffset + j] += srcSamples[j];
+              samples[trackOffset + j] += srcSound.samples[j];
             }
           }
           trackOffset += pieceLengths[pieceIndex];
         }
       }
-      return samples;
+      return {
+        samples: samples,
+        length: samples.length
+      };
     };
 
     Renderer.prototype.calcCacheName = function(type, which, overrides) {
@@ -649,16 +664,16 @@
     };
 
     Renderer.prototype.render = function(which, overrides) {
-      var cacheName, object, samples;
+      var cacheName, object, sound;
       object = this.getObject(which);
       if (!object) {
         return null;
       }
       cacheName = this.calcCacheName(object._type, which, overrides);
-      if (this.sampleCache[cacheName]) {
-        return this.sampleCache[cacheName];
+      if (this.soundCache[cacheName]) {
+        return this.soundCache[cacheName];
       }
-      samples = (function() {
+      sound = (function() {
         switch (object._type) {
           case 'tone':
             return this.renderTone(object, overrides);
@@ -674,8 +689,8 @@
         }
       }).call(this);
       this.log.verbose("Rendered " + cacheName + ".");
-      this.sampleCache[cacheName] = samples;
-      return samples;
+      this.soundCache[cacheName] = sound;
+      return sound;
     };
 
     return Renderer;
@@ -683,7 +698,7 @@
   })();
 
   renderLoopScript = function(args) {
-    var logObj, outputSamples, parser, renderer, sampleRate, which;
+    var logObj, outputSound, parser, renderer, sampleRate, which;
     logObj = args.log;
     logObj.verbose("Parsing...");
     parser = new Parser(logObj);
@@ -696,11 +711,11 @@
       sampleRate = 44100;
       logObj.verbose("Rendering...");
       renderer = new Renderer(logObj, sampleRate, args.readLocalFiles, parser.objects);
-      outputSamples = renderer.render(which, {});
+      outputSound = renderer.render(which, {});
       if (args.outputFilename) {
-        return riffwave.writeWAV(args.outputFilename, sampleRate, outputSamples);
+        return riffwave.writeWAV(args.outputFilename, sampleRate, outputSound.samples);
       }
-      return riffwave.makeBlobUrl(sampleRate, outputSamples);
+      return riffwave.makeBlobUrl(sampleRate, outputSound.samples);
     }
     return null;
   };

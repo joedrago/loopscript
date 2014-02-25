@@ -316,7 +316,7 @@ class Parser
 
 class Renderer
   constructor: (@log, @sampleRate, @readLocalFiles, @objects) ->
-    @sampleCache = {}
+    @soundCache = {}
 
   error: (text) ->
     @log.error "RENDER ERROR: #{text}"
@@ -369,7 +369,10 @@ class Renderer
       # if(toneObj.wav == "square")
       #   sine = (sine > 0) ? 1 : -1
       samples[i] = sine * amplitude * envelope[i] * toneObj.volume
-    return samples
+    return {
+      samples: samples
+      length: samples.length
+    }
 
   renderSample: (sampleObj) ->
     view = null
@@ -387,24 +390,27 @@ class Renderer
       }
 
     if not view
-      return []
+      return {
+        samples: []
+        length: 0
+      }
 
     # console.log "#{sampleObj.src} is #{view.byteLength} in size"
 
     # skip the first 40 bytes
     view.seek(40)
     subchunk2Size = view.getInt32()
-    # console.log "subchunk2Size is #{subchunk2Size}"
-
     samples = []
     while view.tell()+1 < view.byteLength
       samples.push view.getInt16()
-    # console.log "looped #{samples.length} times"
 
     for i in [0...samples.length]
       samples[i] *= sampleObj.volume
 
-    return samples
+    return {
+      samples: samples
+      length: samples.length
+    }
 
   renderLoop: (loopObj) ->
     beatCount = 0
@@ -432,11 +438,11 @@ class Renderer
           overrides.length = sound.length * offsetLength
         if sound.note?
           overrides.note = sound.note
-        srcSamples = @render(pattern.src, overrides)
+        srcSound = @render(pattern.src, overrides)
 
         obj = @getObject(pattern.src)
         offset = sound.offset * offsetLength
-        copyLen = srcSamples.length
+        copyLen = srcSound.length
         if (offset + copyLen) > totalLength
           copyLen = totalLength - offset
         if obj.clip
@@ -446,16 +452,19 @@ class Renderer
               v = patternSamples[offset - fadeClip + j]
               patternSamples[offset - fadeClip + j] = Math.floor(v * ((fadeClip - j) / fadeClip))
           for j in [0...copyLen]
-            patternSamples[offset + j] = srcSamples[j]
+            patternSamples[offset + j] = srcSound.samples[j]
         else
           for j in [0...copyLen]
-            patternSamples[offset + j] += srcSamples[j]
+            patternSamples[offset + j] += srcSound.samples[j]
 
       # Now copy the clipped pattern into the final loop
       for j in [0...totalLength]
         samples[j] += patternSamples[j]
 
-    return samples
+    return {
+      samples: samples
+      length: samples.length
+    }
 
   renderTrack: (trackObj) ->
     pieceCount = 0
@@ -469,9 +478,9 @@ class Renderer
       pieceLengths[pieceIndex] = 0
       for pattern in trackObj._patterns
         if (pieceIndex < pattern.pattern.length) and (pattern.pattern[pieceIndex] != '.')
-          srcSamples = @render(pattern.src)
-          if pieceLengths[pieceIndex] < srcSamples.length
-            pieceLengths[pieceIndex] = srcSamples.length
+          srcSound = @render(pattern.src)
+          if pieceLengths[pieceIndex] < srcSound.length
+            pieceLengths[pieceIndex] = srcSound.length
       totalLength += pieceLengths[pieceIndex]
 
     samples = Array(totalLength)
@@ -480,18 +489,21 @@ class Renderer
 
     for pattern in trackObj._patterns
       trackOffset = 0
-      srcSamples = @render(pattern.src, {})
+      srcSound = @render(pattern.src, {})
       for pieceIndex in [0...pieceCount]
         if (pieceIndex < pattern.pattern.length) and (pattern.pattern[pieceIndex] != '.')
-          copyLen = srcSamples.length
+          copyLen = srcSound.length
           if (trackOffset + copyLen) > totalLength
             copyLen = totalLength - trackOffset
           for j in [0...copyLen]
-            samples[trackOffset + j] += srcSamples[j]
+            samples[trackOffset + j] += srcSound.samples[j]
 
         trackOffset += pieceLengths[pieceIndex]
 
-    return samples
+    return {
+      samples: samples
+      length: samples.length
+    }
 
   calcCacheName: (type, which, overrides) ->
     if type != 'tone'
@@ -518,10 +530,10 @@ class Renderer
       return null
 
     cacheName = @calcCacheName(object._type, which, overrides)
-    if @sampleCache[cacheName]
-      return @sampleCache[cacheName]
+    if @soundCache[cacheName]
+      return @soundCache[cacheName]
 
-    samples = switch object._type
+    sound = switch object._type
       when 'tone' then @renderTone(object, overrides)
       when 'loop' then @renderLoop(object)
       when 'track' then @renderTrack(object)
@@ -531,8 +543,8 @@ class Renderer
         null
 
     @log.verbose "Rendered #{cacheName}."
-    @sampleCache[cacheName] = samples
-    return samples
+    @soundCache[cacheName] = sound
+    return sound
 
 # -------------------------------------------------------------------------------
 # Exports
@@ -550,10 +562,10 @@ renderLoopScript = (args) ->
     sampleRate = 44100
     logObj.verbose "Rendering..."
     renderer = new Renderer(logObj, sampleRate, args.readLocalFiles, parser.objects)
-    outputSamples = renderer.render(which, {})
+    outputSound = renderer.render(which, {})
     if args.outputFilename
-      return riffwave.writeWAV args.outputFilename, sampleRate, outputSamples
-    return riffwave.makeBlobUrl(sampleRate, outputSamples)
+      return riffwave.writeWAV args.outputFilename, sampleRate, outputSound.samples
+    return riffwave.makeBlobUrl(sampleRate, outputSound.samples)
 
   return null
 
