@@ -314,6 +314,15 @@ class Parser
 # -------------------------------------------------------------------------------
 # Renderer
 
+# In all cases where a rendered sound is generated, there are actually two lengths
+# associated with the sound. "sound.length" is the "expected" length, with regards
+# to the typed-in duration for it or for determining loop offets. The other length
+# is the sound.samples.length (also known as the "overflow length"), which is the
+# length that accounts for things like echo or anything else that would cause the
+# sound to spill into the next loop/track. This allows for seamless loops that can
+# play a long sound as the end of a pattern, and it'll cleanly mix into the beginning
+# of the next pattern.
+
 class Renderer
   constructor: (@log, @sampleRate, @readLocalFiles, @objects) ->
     @soundCache = {}
@@ -420,31 +429,46 @@ class Renderer
 
     samplesPerBeat = @sampleRate / (loopObj.bpm / 60) / loopObj.beats
     totalLength = samplesPerBeat * beatCount
-
-    samples = Array(totalLength)
-    for i in [0...totalLength]
-      samples[i] = 0
+    overflowLength = totalLength
 
     for pattern in loopObj._patterns
-      patternSamples = Array(totalLength)
-      for i in [0...totalLength]
-        patternSamples[i] = 0
-
+      sectionCount = pattern.length / 16
+      offsetLength = Math.floor(totalLength / 16 / sectionCount)
       for sound in pattern.sounds
         overrides = {}
-        sectionCount = pattern.length / 16
-        offsetLength = Math.floor(totalLength / 16 / sectionCount)
         if sound.length > 0
           overrides.length = sound.length * offsetLength
         if sound.note?
           overrides.note = sound.note
-        srcSound = @render(pattern.src, overrides)
+        sound._render = @render(pattern.src, overrides)
+        end = (sound.offset * offsetLength) + sound._render.samples.length
+        if overflowLength < end
+          overflowLength = end
+
+    # @log.verbose "totalLength: #{totalLength}"
+    # @log.verbose "overflowLength: #{overflowLength}"
+
+    samples = Array(overflowLength)
+    for i in [0...overflowLength]
+      samples[i] = 0
+
+    for pattern in loopObj._patterns
+      sectionCount = pattern.length / 16
+      offsetLength = Math.floor(totalLength / 16 / sectionCount)
+
+      patternSamples = Array(overflowLength)
+      for i in [0...overflowLength]
+        patternSamples[i] = 0
+
+      for sound in pattern.sounds
+        srcSound = sound._render
 
         obj = @getObject(pattern.src)
         offset = sound.offset * offsetLength
-        copyLen = srcSound.length
-        if (offset + copyLen) > totalLength
-          copyLen = totalLength - offset
+        copyLen = srcSound.samples.length
+        if (offset + copyLen) > overflowLength
+          copyLen = overflowLength - offset
+
         if obj.clip
           fadeClip = 200 # fade out over this many samples prior to a clip to avoid a pop
           if offset > fadeClip
@@ -458,12 +482,12 @@ class Renderer
             patternSamples[offset + j] += srcSound.samples[j]
 
       # Now copy the clipped pattern into the final loop
-      for j in [0...totalLength]
+      for j in [0...overflowLength]
         samples[j] += patternSamples[j]
 
     return {
       samples: samples
-      length: samples.length
+      length: totalLength
     }
 
   renderTrack: (trackObj) ->
@@ -473,18 +497,30 @@ class Renderer
         pieceCount = pattern.pattern.length
 
     totalLength = 0
-    pieceLengths = Array(pieceCount)
+    overflowLength = 0
+    pieceTotalLength = Array(pieceCount)
+    pieceOverflowLength = Array(pieceCount)
     for pieceIndex in [0...pieceCount]
-      pieceLengths[pieceIndex] = 0
+      pieceTotalLength[pieceIndex] = 0
+      pieceOverflowLength[pieceIndex] = 0
       for pattern in trackObj._patterns
         if (pieceIndex < pattern.pattern.length) and (pattern.pattern[pieceIndex] != '.')
           srcSound = @render(pattern.src)
-          if pieceLengths[pieceIndex] < srcSound.length
-            pieceLengths[pieceIndex] = srcSound.length
-      totalLength += pieceLengths[pieceIndex]
+          if pieceTotalLength[pieceIndex] < srcSound.length
+            pieceTotalLength[pieceIndex] = srcSound.length
+          if pieceOverflowLength[pieceIndex] < srcSound.samples.length
+            pieceOverflowLength[pieceIndex] = srcSound.samples.length
+      possibleMaxLength = totalLength + pieceOverflowLength[pieceIndex]
+      if overflowLength < possibleMaxLength
+        overflowLength = possibleMaxLength
+      totalLength += pieceTotalLength[pieceIndex]
 
-    samples = Array(totalLength)
-    for i in [0...totalLength]
+    # @log.verbose "pieceTotalLength: " + JSON.stringify(pieceTotalLength)
+    # @log.verbose "pieceOverflowLength: " + JSON.stringify(pieceOverflowLength)
+    # @log.verbose "totalLength: #{totalLength}, overflowLength: #{overflowLength}"
+
+    samples = Array(overflowLength)
+    for i in [0...overflowLength]
       samples[i] = 0
 
     for pattern in trackObj._patterns
@@ -492,17 +528,17 @@ class Renderer
       srcSound = @render(pattern.src, {})
       for pieceIndex in [0...pieceCount]
         if (pieceIndex < pattern.pattern.length) and (pattern.pattern[pieceIndex] != '.')
-          copyLen = srcSound.length
-          if (trackOffset + copyLen) > totalLength
-            copyLen = totalLength - trackOffset
+          copyLen = srcSound.samples.length
+          if (trackOffset + copyLen) > overflowLength
+            copyLen = overflowLength - trackOffset
           for j in [0...copyLen]
             samples[trackOffset + j] += srcSound.samples[j]
 
-        trackOffset += pieceLengths[pieceIndex]
+        trackOffset += pieceTotalLength[pieceIndex]
 
     return {
       samples: samples
-      length: samples.length
+      length: totalLength
     }
 
   calcCacheName: (type, which, overrides) ->

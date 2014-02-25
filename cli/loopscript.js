@@ -516,7 +516,7 @@
     };
 
     Renderer.prototype.renderLoop = function(loopObj) {
-      var beatCount, copyLen, fadeClip, i, j, obj, offset, offsetLength, overrides, pattern, patternSamples, samples, samplesPerBeat, sectionCount, sound, srcSound, totalLength, v, _i, _j, _k, _l, _len, _len1, _len2, _m, _n, _o, _p, _q, _ref, _ref1, _ref2;
+      var beatCount, copyLen, end, fadeClip, i, j, obj, offset, offsetLength, overflowLength, overrides, pattern, patternSamples, samples, samplesPerBeat, sectionCount, sound, srcSound, totalLength, v, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _n, _o, _p, _q, _r, _ref, _ref1, _ref2, _ref3, _ref4, _s;
       beatCount = 0;
       _ref = loopObj._patterns;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -527,65 +527,81 @@
       }
       samplesPerBeat = this.sampleRate / (loopObj.bpm / 60) / loopObj.beats;
       totalLength = samplesPerBeat * beatCount;
-      samples = Array(totalLength);
-      for (i = _j = 0; 0 <= totalLength ? _j < totalLength : _j > totalLength; i = 0 <= totalLength ? ++_j : --_j) {
-        samples[i] = 0;
-      }
+      overflowLength = totalLength;
       _ref1 = loopObj._patterns;
-      for (_k = 0, _len1 = _ref1.length; _k < _len1; _k++) {
-        pattern = _ref1[_k];
-        patternSamples = Array(totalLength);
-        for (i = _l = 0; 0 <= totalLength ? _l < totalLength : _l > totalLength; i = 0 <= totalLength ? ++_l : --_l) {
-          patternSamples[i] = 0;
-        }
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        pattern = _ref1[_j];
+        sectionCount = pattern.length / 16;
+        offsetLength = Math.floor(totalLength / 16 / sectionCount);
         _ref2 = pattern.sounds;
-        for (_m = 0, _len2 = _ref2.length; _m < _len2; _m++) {
-          sound = _ref2[_m];
+        for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+          sound = _ref2[_k];
           overrides = {};
-          sectionCount = pattern.length / 16;
-          offsetLength = Math.floor(totalLength / 16 / sectionCount);
           if (sound.length > 0) {
             overrides.length = sound.length * offsetLength;
           }
           if (sound.note != null) {
             overrides.note = sound.note;
           }
-          srcSound = this.render(pattern.src, overrides);
+          sound._render = this.render(pattern.src, overrides);
+          end = (sound.offset * offsetLength) + sound._render.samples.length;
+          if (overflowLength < end) {
+            overflowLength = end;
+          }
+        }
+      }
+      samples = Array(overflowLength);
+      for (i = _l = 0; 0 <= overflowLength ? _l < overflowLength : _l > overflowLength; i = 0 <= overflowLength ? ++_l : --_l) {
+        samples[i] = 0;
+      }
+      _ref3 = loopObj._patterns;
+      for (_m = 0, _len3 = _ref3.length; _m < _len3; _m++) {
+        pattern = _ref3[_m];
+        sectionCount = pattern.length / 16;
+        offsetLength = Math.floor(totalLength / 16 / sectionCount);
+        patternSamples = Array(overflowLength);
+        for (i = _n = 0; 0 <= overflowLength ? _n < overflowLength : _n > overflowLength; i = 0 <= overflowLength ? ++_n : --_n) {
+          patternSamples[i] = 0;
+        }
+        _ref4 = pattern.sounds;
+        for (_o = 0, _len4 = _ref4.length; _o < _len4; _o++) {
+          sound = _ref4[_o];
+          srcSound = sound._render;
           obj = this.getObject(pattern.src);
           offset = sound.offset * offsetLength;
-          copyLen = srcSound.length;
-          if ((offset + copyLen) > totalLength) {
-            copyLen = totalLength - offset;
+          copyLen = srcSound.samples.length;
+          if ((offset + copyLen) > overflowLength) {
+            copyLen = overflowLength - offset;
           }
           if (obj.clip) {
             fadeClip = 200;
             if (offset > fadeClip) {
-              for (j = _n = 0; 0 <= fadeClip ? _n < fadeClip : _n > fadeClip; j = 0 <= fadeClip ? ++_n : --_n) {
+              for (j = _p = 0; 0 <= fadeClip ? _p < fadeClip : _p > fadeClip; j = 0 <= fadeClip ? ++_p : --_p) {
                 v = patternSamples[offset - fadeClip + j];
                 patternSamples[offset - fadeClip + j] = Math.floor(v * ((fadeClip - j) / fadeClip));
               }
             }
-            for (j = _o = 0; 0 <= copyLen ? _o < copyLen : _o > copyLen; j = 0 <= copyLen ? ++_o : --_o) {
+            for (j = _q = 0; 0 <= copyLen ? _q < copyLen : _q > copyLen; j = 0 <= copyLen ? ++_q : --_q) {
               patternSamples[offset + j] = srcSound.samples[j];
             }
           } else {
-            for (j = _p = 0; 0 <= copyLen ? _p < copyLen : _p > copyLen; j = 0 <= copyLen ? ++_p : --_p) {
+            for (j = _r = 0; 0 <= copyLen ? _r < copyLen : _r > copyLen; j = 0 <= copyLen ? ++_r : --_r) {
               patternSamples[offset + j] += srcSound.samples[j];
             }
           }
         }
-        for (j = _q = 0; 0 <= totalLength ? _q < totalLength : _q > totalLength; j = 0 <= totalLength ? ++_q : --_q) {
+        for (j = _s = 0; 0 <= overflowLength ? _s < overflowLength : _s > overflowLength; j = 0 <= overflowLength ? ++_s : --_s) {
           samples[j] += patternSamples[j];
         }
       }
       return {
         samples: samples,
-        length: samples.length
+        length: totalLength
       };
     };
 
     Renderer.prototype.renderTrack = function(trackObj) {
-      var copyLen, i, j, pattern, pieceCount, pieceIndex, pieceLengths, samples, srcSound, totalLength, trackOffset, _i, _j, _k, _l, _len, _len1, _len2, _m, _n, _o, _ref, _ref1, _ref2;
+      var copyLen, i, j, overflowLength, pattern, pieceCount, pieceIndex, pieceOverflowLength, pieceTotalLength, possibleMaxLength, samples, srcSound, totalLength, trackOffset, _i, _j, _k, _l, _len, _len1, _len2, _m, _n, _o, _ref, _ref1, _ref2;
       pieceCount = 0;
       _ref = trackObj._patterns;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -595,23 +611,33 @@
         }
       }
       totalLength = 0;
-      pieceLengths = Array(pieceCount);
+      overflowLength = 0;
+      pieceTotalLength = Array(pieceCount);
+      pieceOverflowLength = Array(pieceCount);
       for (pieceIndex = _j = 0; 0 <= pieceCount ? _j < pieceCount : _j > pieceCount; pieceIndex = 0 <= pieceCount ? ++_j : --_j) {
-        pieceLengths[pieceIndex] = 0;
+        pieceTotalLength[pieceIndex] = 0;
+        pieceOverflowLength[pieceIndex] = 0;
         _ref1 = trackObj._patterns;
         for (_k = 0, _len1 = _ref1.length; _k < _len1; _k++) {
           pattern = _ref1[_k];
           if ((pieceIndex < pattern.pattern.length) && (pattern.pattern[pieceIndex] !== '.')) {
             srcSound = this.render(pattern.src);
-            if (pieceLengths[pieceIndex] < srcSound.length) {
-              pieceLengths[pieceIndex] = srcSound.length;
+            if (pieceTotalLength[pieceIndex] < srcSound.length) {
+              pieceTotalLength[pieceIndex] = srcSound.length;
+            }
+            if (pieceOverflowLength[pieceIndex] < srcSound.samples.length) {
+              pieceOverflowLength[pieceIndex] = srcSound.samples.length;
             }
           }
         }
-        totalLength += pieceLengths[pieceIndex];
+        possibleMaxLength = totalLength + pieceOverflowLength[pieceIndex];
+        if (overflowLength < possibleMaxLength) {
+          overflowLength = possibleMaxLength;
+        }
+        totalLength += pieceTotalLength[pieceIndex];
       }
-      samples = Array(totalLength);
-      for (i = _l = 0; 0 <= totalLength ? _l < totalLength : _l > totalLength; i = 0 <= totalLength ? ++_l : --_l) {
+      samples = Array(overflowLength);
+      for (i = _l = 0; 0 <= overflowLength ? _l < overflowLength : _l > overflowLength; i = 0 <= overflowLength ? ++_l : --_l) {
         samples[i] = 0;
       }
       _ref2 = trackObj._patterns;
@@ -621,20 +647,20 @@
         srcSound = this.render(pattern.src, {});
         for (pieceIndex = _n = 0; 0 <= pieceCount ? _n < pieceCount : _n > pieceCount; pieceIndex = 0 <= pieceCount ? ++_n : --_n) {
           if ((pieceIndex < pattern.pattern.length) && (pattern.pattern[pieceIndex] !== '.')) {
-            copyLen = srcSound.length;
-            if ((trackOffset + copyLen) > totalLength) {
-              copyLen = totalLength - trackOffset;
+            copyLen = srcSound.samples.length;
+            if ((trackOffset + copyLen) > overflowLength) {
+              copyLen = overflowLength - trackOffset;
             }
             for (j = _o = 0; 0 <= copyLen ? _o < copyLen : _o > copyLen; j = 0 <= copyLen ? ++_o : --_o) {
               samples[trackOffset + j] += srcSound.samples[j];
             }
           }
-          trackOffset += pieceLengths[pieceIndex];
+          trackOffset += pieceTotalLength[pieceIndex];
         }
       }
       return {
         samples: samples,
-        length: samples.length
+        length: totalLength
       };
     };
 
