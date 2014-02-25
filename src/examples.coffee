@@ -32,6 +32,10 @@ tone note1
 # If you use any letters other than "x" on a tone pattern, you override its
 # note with the note listed.
 
+# H-L are the black keys:
+#      H I   J K L
+#     C D E F G A B
+
 loop loop1
   pattern note1 b.a.g.a.b.b.b.
 

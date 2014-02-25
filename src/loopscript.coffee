@@ -404,8 +404,6 @@ class Renderer
         length: 0
       }
 
-    # console.log "#{sampleObj.src} is #{view.byteLength} in size"
-
     # skip the first 40 bytes
     view.seek(40)
     subchunk2Size = view.getInt32()
@@ -444,9 +442,6 @@ class Renderer
         end = (sound.offset * offsetLength) + sound._render.samples.length
         if overflowLength < end
           overflowLength = end
-
-    # @log.verbose "totalLength: #{totalLength}"
-    # @log.verbose "overflowLength: #{overflowLength}"
 
     samples = Array(overflowLength)
     for i in [0...overflowLength]
