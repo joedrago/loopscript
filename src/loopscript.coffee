@@ -85,12 +85,14 @@ class Parser
 
     @namedStates =
       default:
+        srcoctave: 4
+        srcnote: 'a'
+        octave: 4
+        note: 'a'
         wave: 'sine'
         bpm: 120
         duration: 200
         beats: 4
-        octave: 4
-        note: 'a'
         volume: 1.0
         clip: true
         reverb:
@@ -120,6 +122,10 @@ class Parser
         volume: 'float'
         clip: 'bool'
         reverb: 'reverb'
+        srcoctave: 'int'
+        srcnote: 'string'
+        octave: 'int'
+        note: 'string'
 
       loop:
         bpm: 'int'
@@ -387,12 +393,13 @@ class Renderer
       # if(toneObj.wav == "square")
       #   sine = (sine > 0) ? 1 : -1
       samples[i] = sine * amplitude * envelope[i]
+
     return {
       samples: samples
       length: samples.length
     }
 
-  renderSample: (sampleObj) ->
+  renderSample: (sampleObj, overrides) ->
     view = null
 
     if @readLocalFiles
@@ -420,10 +427,30 @@ class Renderer
     while view.tell()+1 < view.byteLength
       samples.push view.getInt16()
 
-    return {
-      samples: samples
-      length: samples.length
-    }
+    if (overrides.note? and (overrides.note != sampleObj.srcnote)) or (sampleObj.octave != sampleObj.srcoctave)
+      oldfreq = findFreq(sampleObj.srcoctave, sampleObj.srcnote)
+      newfreq = findFreq(sampleObj.octave, overrides.note)
+
+      factor = oldfreq / newfreq
+      # @log.verbose "old: #{oldfreq}, new: #{newfreq}, factor: #{factor}"
+
+      # TODO: Properly resample here with something other than "nearest neighbor"
+      relength = Math.floor(samples.length * factor)
+      resamples = Array(relength)
+      for i in [0...relength]
+        resamples[i] = 0
+      for i in [0...relength]
+        resamples[i] = samples[Math.floor(i / factor)]
+
+      return {
+        samples: resamples
+        length: resamples.length
+      }
+    else
+      return {
+        samples: samples
+        length: samples.length
+      }
 
   renderLoop: (loopObj) ->
     beatCount = 0
@@ -476,6 +503,9 @@ class Renderer
             for j in [0...fadeClip]
               v = patternSamples[offset - fadeClip + j]
               patternSamples[offset - fadeClip + j] = Math.floor(v * ((fadeClip - j) / fadeClip))
+          for j in [offset...overflowLength]
+            # clean out the rest of the sound to ensure that the previous one (which could be longer) was fully clipped
+            patternSamples[j] = 0
           for j in [0...copyLen]
             patternSamples[offset + j] = srcSound.samples[j]
         else
@@ -539,7 +569,7 @@ class Renderer
     }
 
   calcCacheName: (type, which, overrides) ->
-    if type != 'tone'
+    if (type != 'tone') and (type != 'sample')
       return which
 
     name = which
@@ -568,9 +598,9 @@ class Renderer
 
     sound = switch object._type
       when 'tone' then @renderTone(object, overrides)
+      when 'sample' then @renderSample(object, overrides)
       when 'loop' then @renderLoop(object)
       when 'track' then @renderTrack(object)
-      when 'sample' then @renderSample(object)
       else
         @error "unknown type #{object._type}"
         null

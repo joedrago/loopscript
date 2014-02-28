@@ -29,15 +29,20 @@ tone note1
   adsr 0.005 0.05 0.7 0.05
   duration 250
 
-# If you use any letters other than "x" on a tone pattern, you override its
-# note with the note listed.
-
-# H-L are the black keys:
-#      H I   J K L
-#     C D E F G A B
+# Samples can have their notes overridden too!
+sample ding
+  src samples/ding_e.wav
+  srcnote e
 
 loop loop1
   pattern note1 b.a.g.a.b.b.b.
+
+loop loop2
+  pattern ding b.a.g.a.b.b.b.
+
+track song
+  pattern loop1 x
+  pattern loop2 .x
 
 """
 
