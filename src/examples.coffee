@@ -39,10 +39,10 @@ sample ding
   srcnote e
 
 loop loop1
-  pattern note1 b.a.g.a.b.b.b.
+  pattern note1 b.a.g.a.b.b.b...
 
 loop loop2
-  pattern ding b.a.g.a.b.b.b.
+  pattern ding b.a.g.a.b.b.b...
 
 track song
   pattern loop1 x
