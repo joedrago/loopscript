@@ -36,28 +36,28 @@ var LoopScriptHighlightRules = function() {
     this.$rules = { //new TextHighlightRules().getRules();
         start: [
             {
-                token: ["comment"],
-                regex: "#.*"
+                token: "comment",
+                regex: "#.*$"
             },
             {
-                token: ["","keyword", "", "string"],
-                regex: "^(\\s*)(tone|loop|track|sample)(\\s+)(\\S+)"
+                token: "keyword",
+                regex: "\\b(tone|loop|track|sample|section)\\b"
             },
             {
-                token: ["","keyword", "", "comment"],
-                regex: "^(\\s*)(section)(\\s+)(.*)"
+                token: "keyword.operator",
+                regex: "->"
             },
             {
-                token: ["","support.function", "", "string", "variable.parameter"],
-                regex: "^(\\s*)(pattern)(\\s+)(\\S+)(.*)"
+                token: "keyword.operator",
+                regex: ";"
             },
             {
-                token: ["","support.function", "", "variable.parameter"],
-                regex: "^(\\s*)(adsr|reverb)(\\s+)(.*)"
+                token: "support.function",
+                regex: "\\b(pattern|adsr|reverb|bpm|freq|duration|src|octave|note|volume|clip|srcnote|srcoctave)\\b"
             },
             {
-                token: ["","support.function", "", "variable.parameter"],
-                regex: "^(\\s*)(bpm|freq|duration|src|octave|note|volume|clip|srcnote|srcoctave)(\\s+)(.+)"
+                token: "variable.parameter",
+                regex: "([\\.a-lA-LxX]{16})+"
             }
         ]
     };

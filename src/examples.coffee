@@ -24,6 +24,10 @@ loop loop1
 # ------------------------------------------------------------
 # Note overrides!
 
+# H-L are the black keys:
+#     H I   J K L
+#    C D E F G A B
+
 # Try setting the duration to 100
 tone note1
   adsr 0.005 0.05 0.7 0.05
@@ -51,19 +55,16 @@ track song
 # An approximation of the beat from Drake's "The Motto"
 
 bpm 100
-section Bass (in a section to share ADSR)
+section # to share ADSR
   adsr 0.005 0.05 0.7 0.05
   tone bass1
     octave 1
   tone bass2
     octave 2
 
-sample clap
-  src samples/clap.wav
-sample snare
-  src samples/snare.wav
-sample hihat
-  src samples/hihat.wav
+sample clap  -> src samples/clap.wav
+sample snare -> src samples/snare.wav
+sample hihat -> src samples/hihat.wav
 
 loop loop1
   pattern hihat ..x.......x.......x.......x.....

@@ -58,6 +58,9 @@ class IndentStack
   top: ->
     return @stack[@stack.length - 1]
 
+  replaceTop: (v) ->
+    @stack[@stack.length - 1] = v
+
 countIndent = (text) ->
   indent = 0
   for i in [0...text.length]
@@ -205,6 +208,7 @@ class Parser
     return true
 
   pushScope: ->
+    # console.log "PUSH"
     if not @objectScopeReady
       @error "unexpected indent"
       return false
@@ -213,6 +217,7 @@ class Parser
     return true
 
   popScope: ->
+    # console.log "POP"
     @finishObject()
     loop
       if @stateStack.length == 0
@@ -296,29 +301,46 @@ class Parser
     for line in lines
       @lineNo++
       line = line.replace(/(\r\n|\n|\r)/gm,"") # strip newlines
-      line = @commentRegex.exec(line)[1]        # strip comments and trailing whitespace
+      line = @commentRegex.exec(line)[1]       # strip comments and trailing whitespace
       continue if @onlyWhitespaceRegex.test(line)
       [_, indentText, line] = @indentRegex.exec line
       indent = countIndent indentText
+      lineObjs = []
 
-      topIndent = @indentStack.top()
-      if indent == topIndent
-        # do nothing
-      else if indent > topIndent
-        @indentStack.push indent
-        if not @pushScope()
+      arrowSections = line.split(/\s*->\s*/)
+      for arrowSection in arrowSections
+        semiSections = arrowSection.split(/\s*;\s*/)
+        for semiSection in semiSections
+          lineObjs.push {
+              indent: indent
+              line: semiSection
+            }
+        indent += 1000
+
+      for obj in lineObjs
+        # console.log JSON.stringify(obj)
+        topIndent = @indentStack.top()
+        if obj.indent == topIndent
+          # do nothing
+        else if obj.indent > topIndent
+          @indentStack.push obj.indent
+          if not @pushScope()
+            return false
+        else if (obj.indent < 1000) and (topIndent >= 1000)
+          # we're receiving a proper indent for our stack's top. replace it!
+          @indentStack.replaceTop(obj.indent)
+        else
+          loop
+            if not @indentStack.pop()
+              @log.error "Unexpected indent #{obj.indent} on line #{@lineNo}: #{obj.line}"
+              return false
+            if not @popScope()
+              return false
+            continue if @indentStack.top() >= 1000
+            break if @indentStack.top() == obj.indent
+
+        if not @processTokens(obj.line.split(/\s+/))
           return false
-      else
-        loop
-          if not @indentStack.pop()
-            @log.error "Unexpected indent #{indent} on line #{lineNo}: #{line}"
-            return false
-          if not @popScope()
-            return false
-          break if @indentStack.top() == indent
-
-      if not @processTokens(line.split(/\s+/))
-        return false
 
     while @indentStack.pop()
       @popScope()

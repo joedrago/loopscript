@@ -78,6 +78,10 @@
       return this.stack[this.stack.length - 1];
     };
 
+    IndentStack.prototype.replaceTop = function(v) {
+      return this.stack[this.stack.length - 1] = v;
+    };
+
     return IndentStack;
 
   })();
@@ -374,7 +378,7 @@
     };
 
     Parser.prototype.parse = function(text) {
-      var indent, indentText, line, lines, topIndent, _, _i, _len, _ref;
+      var arrowSection, arrowSections, indent, indentText, line, lineObjs, lines, obj, semiSection, semiSections, topIndent, _, _i, _j, _k, _l, _len, _len1, _len2, _len3, _ref;
       lines = text.split('\n');
       this.lineNo = 0;
       for (_i = 0, _len = lines.length; _i < _len; _i++) {
@@ -387,30 +391,52 @@
         }
         _ref = this.indentRegex.exec(line), _ = _ref[0], indentText = _ref[1], line = _ref[2];
         indent = countIndent(indentText);
-        topIndent = this.indentStack.top();
-        if (indent === topIndent) {
+        lineObjs = [];
+        arrowSections = line.split(/\s*->\s*/);
+        for (_j = 0, _len1 = arrowSections.length; _j < _len1; _j++) {
+          arrowSection = arrowSections[_j];
+          semiSections = arrowSection.split(/\s*;\s*/);
+          for (_k = 0, _len2 = semiSections.length; _k < _len2; _k++) {
+            semiSection = semiSections[_k];
+            lineObjs.push({
+              indent: indent,
+              line: semiSection
+            });
+          }
+          indent += 1000;
+        }
+        for (_l = 0, _len3 = lineObjs.length; _l < _len3; _l++) {
+          obj = lineObjs[_l];
+          topIndent = this.indentStack.top();
+          if (obj.indent === topIndent) {
 
-        } else if (indent > topIndent) {
-          this.indentStack.push(indent);
-          if (!this.pushScope()) {
+          } else if (obj.indent > topIndent) {
+            this.indentStack.push(obj.indent);
+            if (!this.pushScope()) {
+              return false;
+            }
+          } else if ((obj.indent < 1000) && (topIndent >= 1000)) {
+            this.indentStack.replaceTop(obj.indent);
+          } else {
+            while (true) {
+              if (!this.indentStack.pop()) {
+                this.log.error("Unexpected indent " + obj.indent + " on line " + this.lineNo + ": " + obj.line);
+                return false;
+              }
+              if (!this.popScope()) {
+                return false;
+              }
+              if (this.indentStack.top() >= 1000) {
+                continue;
+              }
+              if (this.indentStack.top() === obj.indent) {
+                break;
+              }
+            }
+          }
+          if (!this.processTokens(obj.line.split(/\s+/))) {
             return false;
           }
-        } else {
-          while (true) {
-            if (!this.indentStack.pop()) {
-              this.log.error("Unexpected indent " + indent + " on line " + lineNo + ": " + line);
-              return false;
-            }
-            if (!this.popScope()) {
-              return false;
-            }
-            if (this.indentStack.top() === indent) {
-              break;
-            }
-          }
-        }
-        if (!this.processTokens(line.split(/\s+/))) {
-          return false;
         }
       }
       while (this.indentStack.pop()) {
