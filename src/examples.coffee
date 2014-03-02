@@ -57,10 +57,8 @@ track song
 bpm 100
 section # to share ADSR
   adsr 0.005 0.05 0.7 0.05
-  tone bass1
-    octave 1
-  tone bass2
-    octave 2
+  tone bass1 -> octave 1
+  tone bass2 -> octave 2
 
 sample clap  -> src samples/clap.wav
 sample snare -> src samples/snare.wav

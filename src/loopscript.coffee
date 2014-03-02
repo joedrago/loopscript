@@ -9,6 +9,9 @@ fs         = require 'fs'
 # -------------------------------------------------------------------------------
 # Helper functions
 
+logDebug = (args...) ->
+  console.log.apply(console, args)
+
 clone = (obj) ->
   if not obj? or typeof obj isnt 'object'
     return obj
@@ -38,28 +41,6 @@ parseBool = (v) ->
     when "on" then true
     when "1" then true
     else false
-
-# -------------------------------------------------------------------------------
-# IndentStack - used by Parser
-
-class IndentStack
-  constructor: ->
-    @stack = [0]
-
-  push: (indent) ->
-    @stack.push indent
-
-  pop: ->
-    if @stack.length > 1
-      @stack.pop()
-      return true
-    return false
-
-  top: ->
-    return @stack[@stack.length - 1]
-
-  replaceTop: (v) ->
-    @stack[@stack.length - 1] = v
 
 countIndent = (text) ->
   indent = 0
@@ -136,9 +117,8 @@ class Parser
 
       track: {}
 
-    @indentStack = new IndentStack
     @stateStack = []
-    @reset 'default'
+    @reset 'default', 0
     @objects = {}
     @object = null
     @objectScopeReady = false
@@ -149,12 +129,15 @@ class Parser
   error: (text) ->
     @log.error "PARSE ERROR, line #{@lineNo}: #{text}"
 
-  reset: (name) ->
+  reset: (name, indent) ->
     name ?= 'default'
+    indent ?= 0
     if not @namedStates[name]
       @error "invalid reset name: #{name}"
       return false
-    @stateStack.push clone(@namedStates[name])
+    newState = clone(@namedStates[name])
+    newState._indent = indent
+    @stateStack.push newState
     return true
 
   flatten: () ->
@@ -168,10 +151,8 @@ class Parser
     prefix ?= ''
     @log.verbose "trace: #{prefix} " + JSON.stringify(@flatten())
 
-  createObject: (data...) ->
-      @finishObject()
-
-      @object = {}
+  createObject: (indent, data...) ->
+      @object = { _indent: indent }
       for i in [0...data.length] by 2
         @object[data[i]] = data[i+1]
       @objectScopeReady = true
@@ -184,6 +165,7 @@ class Parser
 
       if @object._name
         @lastObject = @object._name
+        logDebug "createObject[#{indent}]: ", @lastObject
 
   finishObject: ->
     if @object
@@ -197,8 +179,8 @@ class Parser
             when 'float' then parseFloat(v)
             when 'bool' then parseBool(v)
             else v
-          # @log.verbose "setting #{@object._name}'s #{key} to " + JSON.stringify(@object[key])
 
+      logDebug "finishObject: ", @object
       @objects[@object._name] = @object
     @object = null
 
@@ -207,25 +189,39 @@ class Parser
     return false if not @object._type == type
     return true
 
-  pushScope: ->
-    # console.log "PUSH"
-    if not @objectScopeReady
-      @error "unexpected indent"
-      return false
-    @objectScopeReady = false
-    @stateStack.push { _scope: true }
+  updateFakeIndents: (indent) ->
+    return if indent >= 1000
+    i = @stateStack.length - 1
+    while i > 0
+      prevIndent = @stateStack[i - 1]._indent
+      if (@stateStack[i]._indent > 1000) and (prevIndent < indent)
+        logDebug "updateFakeIndents: changing stack indent #{i} from #{@stateStack[i]._indent} to #{indent}"
+        @stateStack[i]._indent = indent
+      i--
+
+  pushState: (indent) ->
+    indent ?= 0
+    logDebug "pushState(#{indent})"
+    @updateFakeIndents indent
+    @stateStack.push { _indent: indent }
     return true
 
-  popScope: ->
-    # console.log "POP"
-    @finishObject()
+  popState: (indent) ->
+    logDebug "popState(#{indent})"
+    if @object?
+      if indent <= @object._indent
+        @finishObject()
+
+    @updateFakeIndents indent
+
     loop
-      if @stateStack.length == 0
-        @error "state stack is empty! something bad has happened"
-      top = @stateStack[@stateStack.length - 1]
-      break if top._scope?
+      topIndent = @getTopIndent()
+      logDebug "popState(#{indent}) top indent #{topIndent}"
+      break if indent == topIndent
+      if @stateStack.length < 2
+        return false
+      logDebug "popState(#{indent}) popping indent #{topIndent}"
       @stateStack.pop()
-    @stateStack.pop()
     return true
 
   parsePattern: (pattern) ->
@@ -259,15 +255,18 @@ class Parser
       sounds: sounds
     }
 
-  processTokens: (tokens) ->
+  getTopIndent: ->
+    return @stateStack[@stateStack.length - 1]._indent
+
+  processTokens: (tokens, indent) ->
     cmd = tokens[0].toLowerCase()
     if cmd == 'reset'
-      if not @reset(tokens[1])
+      if not @reset(tokens[1], indent)
         return false
     else if cmd == 'section'
       @objectScopeReady = true
     else if @isObjectType(cmd)
-      @createObject '_type', cmd, '_name', tokens[1]
+      @createObject indent, '_type', cmd, '_name', tokens[1]
     else if cmd == 'pattern'
       if not (@creatingObjectType('loop') or @creatingObjectType('track'))
         @error "unexpected pattern command"
@@ -318,34 +317,20 @@ class Parser
         indent += 1000
 
       for obj in lineObjs
-        # console.log JSON.stringify(obj)
-        topIndent = @indentStack.top()
-        if obj.indent == topIndent
-          # do nothing
-        else if obj.indent > topIndent
-          @indentStack.push obj.indent
-          if not @pushScope()
-            return false
-        else if (obj.indent < 1000) and (topIndent >= 1000)
-          # we're receiving a proper indent for our stack's top. replace it!
-          @indentStack.replaceTop(obj.indent)
+        logDebug "handling indent: " + JSON.stringify(obj)
+        topIndent = @getTopIndent()
+        if obj.indent > topIndent
+          @pushState(obj.indent)
         else
-          loop
-            if not @indentStack.pop()
-              @log.error "Unexpected indent #{obj.indent} on line #{@lineNo}: #{obj.line}"
-              return false
-            if not @popScope()
-              return false
-            continue if @indentStack.top() >= 1000
-            break if @indentStack.top() == obj.indent
+          if not @popState(obj.indent)
+            @log.error "unexpected outdent"
+            return false
 
-        if not @processTokens(obj.line.split(/\s+/))
+        logDebug "processing: " + JSON.stringify(obj)
+        if not @processTokens(obj.line.split(/\s+/), obj.indent)
           return false
 
-    while @indentStack.pop()
-      @popScope()
-
-    @finishObject()
+    @popState(0)
     return true
 
 # -------------------------------------------------------------------------------
