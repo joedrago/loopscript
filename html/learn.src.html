@@ -55,6 +55,11 @@
 <li><a href="#intro">Introduction</a></li>
 <li><a href="#format">Format</a></li>
 <li><a href="#tones">Tones</a></li>
+<li><a href="#samples">Samples</a></li>
+<li><a href="#loops">Loops</a></li>
+<li><a href="#tracks">Tracks</a></li>
+<li><a href="#sections">Sections</a></li>
+<li><a href="#advanced">Advanced</a></li>
 </ul>
 
 <a name="intro">&nbsp;</a>
@@ -109,6 +114,80 @@ END
 EXAMPLE A tone that uses all defaults:
 tone example1
 END
+
+<p>Tones have the following settings:</p>
+
+<ul>
+<li><span class="command">wave</span> - What type of waveform. <b>sine</b> is the default, and currently the only choice.</li>
+<li><span class="command">duration</span> - The length of the sound in milliseconds.</li>
+<li><span class="command">note</span> - Sets the frequency to a note (used with octave). <b>A-</b> are their respective notes, and H-L are the "black keys" of a piano (sharps/flats). </li>
+<li><span class="command">octave</span> - A value between 0 and 8 indicating the octave on a piano (0 is the bass end).</li>
+<li><span class="command">freq</span> - Directly set the frequency of the waveform. This overrides the note/octave pair.</li>
+<li><span class="command">volume</span> - A relative volume change. <b>1.0</b> is the default, which does not alter the volume.</li>
+<li><span class="command">clip</span> - <b>true/false</b> When used in a loop, this determines whether the sound will "clip" (overwrite) itself if played again before the previous duration finishes. If it is false, it will mix them together. Defaults to <b>true</b>.</li>
+<li><span class="command">reverb</span> - Sets the reverb (echo) on a waveform. Takes two values: a delay (integer) and a decay (floating point value). The delay is how long in milliseconds to repeat the sound, and decay is how much the volume decays for each echoed sound. (ex. reverb 250 0.5)</li>
+<li><span class="command">adsr</span> - Uses an ADSR envelope on the waveform. Takes 4 floats represent, ex. "adsr 0.005 0.05 0.7 0.05". See the <a href="#adsr">ADSR</a> section to understand what these values mean.</li>
+</ul>
+
+<p>Here is an example of a more complicated tone:</p>
+
+EXAMPLE So complicated!:
+tone echosound
+  wave sine
+  duration 800
+  octave 4
+  note G
+  adsr 0.005 0.05 0.7 0.05
+  reverb 250 0.5
+END
+
+<a name="samples">&nbsp;</a>
+<h3>Samples</h3>
+
+<p>Samples are external sound effects, read in from WAV files. Currently, LoopScript only supports 16 bit, 44.1KHz, mono WAV files.</p>
+
+EXAMPLE Basic sample:
+sample clap
+  src samples/clap.wav
+END
+
+<p>Samples support the following settings:</p>
+
+<ul>
+<li><span class="command">src</span> - Location of the WAV file. Required. (no default value)</li>
+<li><span class="command">volume</span> - A relative volume change. <b>1.0</b> is the default, which does not alter the volume.</li>
+<li><span class="command">clip</span> - <b>true/false</b> When used in a loop, this determines whether the sound will "clip" (overwrite) itself if played again before the previous duration finishes. If it is false, it will mix them together. Defaults to <b>true</b>.</li>
+<li><span class="command">reverb</span> - Sets the reverb (echo) on a waveform. Takes two values: a delay (integer) and a decay (floating point value). The delay is how long in milliseconds to repeat the sound, and decay is how much the volume decays for each echoed sound. (ex. reverb 250 0.5)</li>
+
+<li><span class="command">srcnote</span> - The perceived note of the sample (A-L). This is useful for changing the pitch of a sample for a melody, such as a sample of a single guitar note.</li>
+<li><span class="command">srcoctave</span> - The perceived octave of the sample. (0-8)</li>
+<li><span class="command">note</span> - The requested note. If different than srcnote, the sample's pitch will be adjusted.</li>
+<li><span class="command">octave</span> - The requested octave. If different than srcoctave, the sample's pitch will be adjusted.</li>
+</ul>
+
+EXAMPLE Pitch correction (compare to the sample above to hear the difference in pitch):
+sample clapCtoA
+  src samples/clap.wav
+  srcnote c
+  note a
+END
+
+<a name="loops">&nbsp;</a>
+<h3>Loops</h3>
+
+<a name="tracks">&nbsp;</a>
+<h3>Tracks</h3>
+
+<a name="sections">&nbsp;</a>
+<h3>Sections</h3>
+
+<a name="advanced">&nbsp;</a>
+<h3>Advanced</h3>
+
+<a name="adsr">&nbsp;</a>
+<h4>ADSR</h4>
+
+<img src="images/adsr.png" height="250">
 
 <script>
     var loopscript = require("./loopscript");

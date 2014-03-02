@@ -449,9 +449,10 @@ class Renderer
     while view.tell()+1 < view.byteLength
       samples.push view.getInt16()
 
-    if (overrides.note? and (overrides.note != sampleObj.srcnote)) or (sampleObj.octave != sampleObj.srcoctave)
+    overrideNote = if overrides.note then overrides.note else sampleObj.note
+    if (overrideNote != sampleObj.srcnote) or (sampleObj.octave != sampleObj.srcoctave)
       oldfreq = findFreq(sampleObj.srcoctave, sampleObj.srcnote)
-      newfreq = findFreq(sampleObj.octave, overrides.note)
+      newfreq = findFreq(sampleObj.octave, overrideNote)
 
       factor = oldfreq / newfreq
       # @log.verbose "old: #{oldfreq}, new: #{newfreq}, factor: #{factor}"

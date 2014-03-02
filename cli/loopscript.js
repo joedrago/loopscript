@@ -522,7 +522,7 @@
     };
 
     Renderer.prototype.renderSample = function(sampleObj, overrides) {
-      var data, factor, i, newfreq, oldfreq, relength, resamples, samples, subchunk2Size, view, _i, _j;
+      var data, factor, i, newfreq, oldfreq, overrideNote, relength, resamples, samples, subchunk2Size, view, _i, _j;
       view = null;
       if (this.readLocalFiles) {
         data = fs.readFileSync(sampleObj.src);
@@ -549,9 +549,10 @@
       while (view.tell() + 1 < view.byteLength) {
         samples.push(view.getInt16());
       }
-      if (((overrides.note != null) && (overrides.note !== sampleObj.srcnote)) || (sampleObj.octave !== sampleObj.srcoctave)) {
+      overrideNote = overrides.note ? overrides.note : sampleObj.note;
+      if ((overrideNote !== sampleObj.srcnote) || (sampleObj.octave !== sampleObj.srcoctave)) {
         oldfreq = findFreq(sampleObj.srcoctave, sampleObj.srcnote);
-        newfreq = findFreq(sampleObj.octave, overrides.note);
+        newfreq = findFreq(sampleObj.octave, overrideNote);
         factor = oldfreq / newfreq;
         relength = Math.floor(samples.length * factor);
         resamples = Array(relength);

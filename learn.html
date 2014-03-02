@@ -124,6 +124,11 @@
 <li><a href="#intro">Introduction</a></li>
 <li><a href="#format">Format</a></li>
 <li><a href="#tones">Tones</a></li>
+<li><a href="#samples">Samples</a></li>
+<li><a href="#loops">Loops</a></li>
+<li><a href="#tracks">Tracks</a></li>
+<li><a href="#sections">Sections</a></li>
+<li><a href="#advanced">Advanced</a></li>
 </ul>
 
 <a name="intro">&nbsp;</a>
@@ -235,6 +240,137 @@ function useExampleCode3(doRender) {
 }
 </script>
 </div>
+
+<p>Tones have the following settings:</p>
+
+<ul>
+<li><span class="command">wave</span> - What type of waveform. <b>sine</b> is the default, and currently the only choice.</li>
+<li><span class="command">duration</span> - The length of the sound in milliseconds.</li>
+<li><span class="command">note</span> - Sets the frequency to a note (used with octave). <b>A-</b> are their respective notes, and H-L are the "black keys" of a piano (sharps/flats). </li>
+<li><span class="command">octave</span> - A value between 0 and 8 indicating the octave on a piano (0 is the bass end).</li>
+<li><span class="command">freq</span> - Directly set the frequency of the waveform. This overrides the note/octave pair.</li>
+<li><span class="command">volume</span> - A relative volume change. <b>1.0</b> is the default, which does not alter the volume.</li>
+<li><span class="command">clip</span> - <b>true/false</b> When used in a loop, this determines whether the sound will "clip" (overwrite) itself if played again before the previous duration finishes. If it is false, it will mix them together. Defaults to <b>true</b>.</li>
+<li><span class="command">reverb</span> - Sets the reverb (echo) on a waveform. Takes two values: a delay (integer) and a decay (floating point value). The delay is how long in milliseconds to repeat the sound, and decay is how much the volume decays for each echoed sound. (ex. reverb 250 0.5)</li>
+<li><span class="command">adsr</span> - Uses an ADSR envelope on the waveform. Takes 4 floats represent, ex. "adsr 0.005 0.05 0.7 0.05". See the <a href="#adsr">ADSR</a> section to understand what these values mean.</li>
+</ul>
+
+<p>Here is an example of a more complicated tone:</p>
+
+<div id="exOuter4" class="exOuter">
+<div id="exTitle4" class="exTitle">
+So complicated!:
+</div>
+<div id="exCode4" class="exCode well"><span class="keyword">tone</span> echosound 
+  <span class="command">wave</span> sine 
+  <span class="command">duration</span> 800 
+  <span class="command">octave</span> 4 
+  <span class="command">note</span> G 
+  <span class="command">adsr</span> 0.005 0.05 0.7 0.05 
+  <span class="command">reverb</span> 250 0.5 
+</div>
+<div id="exPlayer4" class="exPlayer">
+[<a class="listenclick" onclick="useExampleCode4(true); return false">Listen Here</a>]
+[<a href="#" onclick="useExampleCode4(false)">Listen in Playground</a>]
+</div>
+<script>
+function useExampleCode4(doRender) {
+  var exampleCode4 = "tone echosound\n  wave sine\n  duration 800\n  octave 4\n  note G\n  adsr 0.005 0.05 0.7 0.05\n  reverb 250 0.5";
+  if(doRender) {
+    render(exampleCode4, '#exPlayer4', false, false);
+  } else {
+    var encodedScript = LZString.compressToBase64(exampleCode4);
+    window.location = "play.html?s=" + encodedScript;
+  }
+}
+</script>
+</div>
+
+<a name="samples">&nbsp;</a>
+<h3>Samples</h3>
+
+<p>Samples are external sound effects, read in from WAV files. Currently, LoopScript only supports 16 bit, 44.1KHz, mono WAV files.</p>
+
+<div id="exOuter5" class="exOuter">
+<div id="exTitle5" class="exTitle">
+Basic sample:
+</div>
+<div id="exCode5" class="exCode well"><span class="keyword">sample</span> clap 
+  <span class="command">src</span> samples/clap.wav 
+</div>
+<div id="exPlayer5" class="exPlayer">
+[<a class="listenclick" onclick="useExampleCode5(true); return false">Listen Here</a>]
+[<a href="#" onclick="useExampleCode5(false)">Listen in Playground</a>]
+</div>
+<script>
+function useExampleCode5(doRender) {
+  var exampleCode5 = "sample clap\n  src samples/clap.wav";
+  if(doRender) {
+    render(exampleCode5, '#exPlayer5', false, false);
+  } else {
+    var encodedScript = LZString.compressToBase64(exampleCode5);
+    window.location = "play.html?s=" + encodedScript;
+  }
+}
+</script>
+</div>
+
+<p>Samples support the following settings:</p>
+
+<ul>
+<li><span class="command">src</span> - Location of the WAV file. Required. (no default value)</li>
+<li><span class="command">volume</span> - A relative volume change. <b>1.0</b> is the default, which does not alter the volume.</li>
+<li><span class="command">clip</span> - <b>true/false</b> When used in a loop, this determines whether the sound will "clip" (overwrite) itself if played again before the previous duration finishes. If it is false, it will mix them together. Defaults to <b>true</b>.</li>
+<li><span class="command">reverb</span> - Sets the reverb (echo) on a waveform. Takes two values: a delay (integer) and a decay (floating point value). The delay is how long in milliseconds to repeat the sound, and decay is how much the volume decays for each echoed sound. (ex. reverb 250 0.5)</li>
+
+<li><span class="command">srcnote</span> - The perceived note of the sample (A-L). This is useful for changing the pitch of a sample for a melody, such as a sample of a single guitar note.</li>
+<li><span class="command">srcoctave</span> - The perceived octave of the sample. (0-8)</li>
+<li><span class="command">note</span> - The requested note. If different than srcnote, the sample's pitch will be adjusted.</li>
+<li><span class="command">octave</span> - The requested octave. If different than srcoctave, the sample's pitch will be adjusted.</li>
+</ul>
+
+<div id="exOuter6" class="exOuter">
+<div id="exTitle6" class="exTitle">
+Pitch correction (compare to the sample above to hear the difference in pitch):
+</div>
+<div id="exCode6" class="exCode well"><span class="keyword">sample</span> clapCtoA 
+  <span class="command">src</span> samples/clap.wav 
+  <span class="command">srcnote</span> c 
+  <span class="command">note</span> a 
+</div>
+<div id="exPlayer6" class="exPlayer">
+[<a class="listenclick" onclick="useExampleCode6(true); return false">Listen Here</a>]
+[<a href="#" onclick="useExampleCode6(false)">Listen in Playground</a>]
+</div>
+<script>
+function useExampleCode6(doRender) {
+  var exampleCode6 = "sample clapCtoA\n  src samples/clap.wav\n  srcnote c\n  note a";
+  if(doRender) {
+    render(exampleCode6, '#exPlayer6', false, false);
+  } else {
+    var encodedScript = LZString.compressToBase64(exampleCode6);
+    window.location = "play.html?s=" + encodedScript;
+  }
+}
+</script>
+</div>
+
+<a name="loops">&nbsp;</a>
+<h3>Loops</h3>
+
+<a name="tracks">&nbsp;</a>
+<h3>Tracks</h3>
+
+<a name="sections">&nbsp;</a>
+<h3>Sections</h3>
+
+<a name="advanced">&nbsp;</a>
+<h3>Advanced</h3>
+
+<a name="adsr">&nbsp;</a>
+<h4>ADSR</h4>
+
+<img src="images/adsr.png" height="250">
 
 <script>
     var loopscript = require("./loopscript");

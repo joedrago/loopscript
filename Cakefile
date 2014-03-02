@@ -75,7 +75,7 @@ wrapToken = (token) ->
     return wrapClass(token, 'keyword')
   if token.match(/^(->|;)$/)
     return wrapClass(token, 'operator')
-  if token.match(/^(pattern|adsr|reverb|bpm|freq|duration|src|octave|note|volume|clip|srcnote|srcoctave)$/)
+  if token.match(/^(pattern|adsr|reverb|bpm|freq|duration|src|octave|note|volume|clip|srcnote|srcoctave|wave)$/)
     return wrapClass(token, 'command')
   if token.match(/^[\\.a-lA-LxX]{16}$/)
     return wrapClass(token, 'pattern')
