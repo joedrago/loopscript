@@ -10,7 +10,7 @@ fs         = require 'fs'
 # Helper functions
 
 logDebug = (args...) ->
-  console.log.apply(console, args)
+  # console.log.apply(console, args)
 
 clone = (obj) ->
   if not obj? or typeof obj isnt 'object'
