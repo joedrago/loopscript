@@ -76,7 +76,6 @@ class Parser
         wave: 'sine'
         bpm: 120
         duration: 200
-        beats: 4
         volume: 1.0
         clip: true
         reverb:
@@ -113,7 +112,6 @@ class Parser
 
       loop:
         bpm: 'int'
-        beats: 'int'
 
       track: {}
 
@@ -466,7 +464,7 @@ class Renderer
       if beatCount < pattern.length
         beatCount = pattern.length
 
-    samplesPerBeat = @sampleRate / (loopObj.bpm / 60) / loopObj.beats
+    samplesPerBeat = @sampleRate / (loopObj.bpm / 60) / 4
     totalLength = samplesPerBeat * beatCount
     overflowLength = totalLength
 

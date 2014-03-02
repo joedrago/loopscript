@@ -93,7 +93,6 @@
           wave: 'sine',
           bpm: 120,
           duration: 200,
-          beats: 4,
           volume: 1.0,
           clip: true,
           reverb: {
@@ -131,8 +130,7 @@
           note: 'string'
         },
         loop: {
-          bpm: 'int',
-          beats: 'int'
+          bpm: 'int'
         },
         track: {}
       };
@@ -578,7 +576,7 @@
           beatCount = pattern.length;
         }
       }
-      samplesPerBeat = this.sampleRate / (loopObj.bpm / 60) / loopObj.beats;
+      samplesPerBeat = this.sampleRate / (loopObj.bpm / 60) / 4;
       totalLength = samplesPerBeat * beatCount;
       overflowLength = totalLength;
       _ref1 = loopObj._patterns;
