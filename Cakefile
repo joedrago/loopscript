@@ -107,6 +107,7 @@ generateHTML = (cb) ->
       line = line.replace(/(\r\n|\n|\r)/gm,"") # strip newlines
       if matches = line.match(/^EXAMPLE\s+(.+)/)
         exampleCode = ""
+        exampleIndex++
         while line = lines.shift()
           line = line.replace(/(\r\n|\n|\r)/gm,"") # strip newlines
           if line != 'END'
@@ -114,7 +115,9 @@ generateHTML = (cb) ->
           else
             exampleCode = exampleCode.replace(/\n+$/, "");
             exampleTitle = matches[1]
-            exampleCodeSingleLine = exampleCode.replace(/\n/g, "\\n")
+            exampleCodeSingleLine = exampleCode
+            exampleCodeSingleLine = exampleCodeSingleLine.replace(/\n/g, "\\n")
+            exampleCodeSingleLine = exampleCodeSingleLine.replace(/"/g, "\\\"")
             prettyExampleCode = genPrettyExampleCode(exampleCode)
             line = """
 <div id="exOuter#{exampleIndex}" class="exOuter">
@@ -123,7 +126,7 @@ generateHTML = (cb) ->
 </div>
 <div id="exCode#{exampleIndex}" class="exCode well">#{prettyExampleCode}</div>
 <div id="exPlayer#{exampleIndex}" class="exPlayer">
-[<a href="#" onclick="useExampleCode#{exampleIndex}(true)">Listen Here</a>]
+[<a class=\"listenclick\" onclick="useExampleCode#{exampleIndex}(true); return false">Listen Here</a>]
 [<a href="#" onclick="useExampleCode#{exampleIndex}(false)">Listen in Playground</a>]
 </div>
 <script>
