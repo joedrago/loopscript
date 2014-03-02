@@ -56,7 +56,7 @@ var LoopScriptHighlightRules = function() {
                 regex: "\\b(pattern|adsr|reverb|bpm|freq|duration|src|octave|note|volume|clip|srcnote|srcoctave)\\b"
             },
             {
-                token: "variable.parameter",
+                token: "variable.string",
                 regex: "([\\.a-lA-LxX]{16})+"
             }
         ]

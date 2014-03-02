@@ -2,7 +2,7 @@ module.exports =
 
   first: """
 # ------------------------------------------------------------
-# Your first LoopScript. Someday there will be documentation!
+# Your first LoopScript. Click "Compile" below to start!
 
 tone note1
   duration 250

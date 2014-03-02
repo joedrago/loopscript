@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LoopScript: Learn</title>
+
+    <!-- Bootstrap -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/bootstrap-theme.min.css" rel="stylesheet">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <style>
+      body {
+        padding-top: 70px;
+        padding-bottom: 30px;
+      }
+    </style>
+  </head>
+  <body>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="js/jquery-1.11.0.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="js/bootstrap.min.js"></script>
+
+    <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">LoopScript</a>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li >
+              <a href="/">Home</a>
+            </li>
+            <li class="active">
+              <a href="learn.html">Learn</a>
+            </li>
+            <li >
+              <a href="play.html">Play</a>
+            </li>
+            <li >
+              <a href="source.html">Source / Install</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="container" role="main">
+<script src="js/loopscript.js" type="text/javascript" charset="utf-8"></script>
+<script src="js/lz-string-1.3.3-min.js" type="text/javascript" charset="utf-8"></script>
+
+<style>
+
+  h3 {
+    margin-top: 40px;
+  }
+
+  .exOuter {
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
+
+  .exTitle {
+    font-size: 0.8em;
+    font-weight: 900;
+  }
+
+  .exCode {
+    font-family: monospace;
+    white-space: pre;
+    border: 1px solid #eeeeee;
+  }
+
+  .exCode .comment {
+    color: #ff0000;
+  }
+
+  .exCode .keyword {
+    color: #0086B3;
+    font-weight: 900;
+  }
+  .exCode .command {
+    color: #0086B3;
+  }
+  .exCode .operator {
+    color: #ff0000;
+  }
+  .exCode .pattern {
+    color: #ff0000;
+  }
+
+  .exPlayer {
+    font-size: 0.8em;
+  }
+</style>
+
+<h1>-- IGNORE THIS PAGE, NOT WRITTEN YET --</h1>
+
+<h1>Learning LoopScript</h1>
+
+<ul>
+<li><a href="#tones">Tones</a></li>
+</ul>
+
+<a name="tones">&nbsp;</a>
+<h3>Tones</h3>
+
+sdfkjsdfk jsdfk jsd l;kj<br>
+<br>
+
+<div class="alert alert-info">
+<strong>Heads up!</strong> This alert needs your attention, but it's not super important.
+</div>
+
+<div id="exOuter0" class="exOuter">
+<div id="exTitle0" class="exTitle">
+Example:
+</div>
+<div id="exCode0" class="exCode well"><span class="keyword">tone</span> note1 
+  <span class="command">duration</span> 250 
+  <span class="command">octave</span> 4 
+  <span class="command">note</span> C 
+</div>
+<div id="exPlayer0" class="exPlayer">
+[<a href="#" onclick="useExampleCode0(true)">Listen Here</a>]
+[<a href="#" onclick="useExampleCode0(false)">Listen in Playground</a>]
+</div>
+<script>
+function useExampleCode0(doRender) {
+  var exampleCode0 = "tone note1\n  duration 250\n  octave 4\n  note C";
+  if(doRender) {
+    render(exampleCode0, '#exPlayer0', false, false);
+  } else {
+    var encodedScript = LZString.compressToBase64(exampleCode0);
+    window.location = "play.html?s=" + encodedScript;
+  }
+}
+</script>
+</div>
+
+<script>
+    var loopscript = require("./loopscript");
+    function render(scriptText, outputID, showOutput, showSaveAs)
+    {
+      if(showOutput)
+      {
+        $('#output').css("display", "block");
+      }
+      var blobUrl = loopscript.render({
+          script: scriptText,
+          log: {
+            verbose: function(text) {
+              if(showOutput)
+              {
+                $('#output').append(text + "<br>");
+                var o = document.getElementById("output");
+                o.scrollTop = o.scrollHeight;
+              }
+            },
+            error: function(text) {
+              if(showOutput)
+              {
+                $('#output').append("<span class=\"error\">" + text + "</span><br>");
+                var o = document.getElementById("output");
+                o.scrollTop = o.scrollHeight;
+              }
+            }
+          }
+      });
+      var html = "<audio src="+blobUrl+" controls preload=\"auto\" autobuffer></audio>";
+      if(showSaveAs) {
+        html += "<a href="+blobUrl+"><br>Right click here to Save As...</a>";
+      }
+      $(outputID).html(html);
+    }
+</script>
+    </div>
+
+  </body>
+</html>

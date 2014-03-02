@@ -9,6 +9,19 @@ modules = [
   'examples'
 ]
 
+pages = [
+  'index'
+  'play'
+  'learn'
+  'source'
+]
+
+pageTitles =
+  index: "Home"
+  play: "Play"
+  learn: "Learn"
+  source: "Source"
+
 # -------------------------------------------------------------------------------
 # Build scripts
 
@@ -54,10 +67,97 @@ generateJSLib = (callback) ->
     util.log "Generated CLI lib dir"
     callback?() if code is 0
 
+wrapClass = (token, cls) ->
+  return "<span class=\"#{cls}\">#{token}</span>"
+
+wrapToken = (token) ->
+  if token.match(/^(tone|loop|track|sample|section)$/)
+    return wrapClass(token, 'keyword')
+  if token.match(/^(->|;)$/)
+    return wrapClass(token, 'operator')
+  if token.match(/^(pattern|adsr|reverb|bpm|freq|duration|src|octave|note|volume|clip|srcnote|srcoctave)$/)
+    return wrapClass(token, 'command')
+  if token.match(/^[\\.a-lA-LxX]{16}$/)
+    return wrapClass(token, 'pattern')
+  return token
+
+genPrettyExampleCode = (text) ->
+  lines = text.split(/\n/);
+  pretty = ""
+  for line in lines
+    commentMatches = line.match(/([^#]*)(#.*)?$/)
+    pieces = commentMatches[1].split(/[ ]/g)
+    for piece in pieces
+      pretty += wrapToken(piece) + " "
+    if typeof commentMatches[2] == 'string'
+      if commentMatches[2].length > 0
+        pretty += "<span class=\"comment\">#{commentMatches[2]}</span>"
+    pretty += "\n"
+  return pretty
+
+generateHTML = (cb) ->
+  header = fs.readFileSync("html/header.html", 'utf-8')
+  footer = fs.readFileSync("html/footer.html", 'utf-8')
+  for file in pages
+    srcText = fs.readFileSync("html/#{file}.src.html", 'utf-8')
+    lines = srcText.split('\n')
+    dstText = ""
+    exampleIndex = 0
+    while line = lines.shift()
+      line = line.replace(/(\r\n|\n|\r)/gm,"") # strip newlines
+      if matches = line.match(/^EXAMPLE\s+(.+)/)
+        exampleCode = ""
+        while line = lines.shift()
+          line = line.replace(/(\r\n|\n|\r)/gm,"") # strip newlines
+          if line != 'END'
+            exampleCode += line + "\n"
+          else
+            exampleCode = exampleCode.replace(/\n+$/, "");
+            exampleTitle = matches[1]
+            exampleCodeSingleLine = exampleCode.replace(/\n/g, "\\n")
+            prettyExampleCode = genPrettyExampleCode(exampleCode)
+            line = """
+<div id="exOuter#{exampleIndex}" class="exOuter">
+<div id="exTitle#{exampleIndex}" class="exTitle">
+#{exampleTitle}
+</div>
+<div id="exCode#{exampleIndex}" class="exCode well">#{prettyExampleCode}</div>
+<div id="exPlayer#{exampleIndex}" class="exPlayer">
+[<a href="#" onclick="useExampleCode#{exampleIndex}(true)">Listen Here</a>]
+[<a href="#" onclick="useExampleCode#{exampleIndex}(false)">Listen in Playground</a>]
+</div>
+<script>
+function useExampleCode#{exampleIndex}(doRender) {
+  var exampleCode#{exampleIndex} = "#{exampleCodeSingleLine}";
+  if(doRender) {
+    render(exampleCode#{exampleIndex}, '#exPlayer#{exampleIndex}', false, false);
+  } else {
+    var encodedScript = LZString.compressToBase64(exampleCode#{exampleIndex});
+    window.location = "play.html?s=" + encodedScript;
+  }
+}
+</script>
+</div>
+"""
+            break;
+      dstText += line + "\n"
+
+    interpedHeader = header
+    for name in pages
+      activeClass = ""
+      if name == file
+        activeClass = "class=\"active\""
+      interpedHeader = interpedHeader.replace("!#{name}!", activeClass)
+    interpedHeader = interpedHeader.replace("!title!", pageTitles[file])
+    fs.writeFileSync("#{file}.html", interpedHeader + dstText + footer)
+    util.log "Generated #{file}.html"
+  cb() if cb?
+
 buildEverything = (cb) ->
   generateJSBundle ->
-    generateJSLib ->
-      cb() if cb
+    generateHTML ->
+      generateJSLib ->
+        cb() if cb
 
 task 'build', 'build html', (options) ->
   buildEverything ->
@@ -80,6 +180,6 @@ task 'server', 'Run server and watch for changed source files to automatically r
       .resume()
     httpServer.listen options.port
 
-    watch 'src', (filename) ->
+    watch ['src', 'html'], (filename) ->
       util.log "Source code #{filename} changed, regenerating bundle..."
       buildEverything()
