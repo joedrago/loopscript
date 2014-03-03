@@ -125,9 +125,11 @@ generateHTML = (cb) ->
 #{exampleTitle}
 </div>
 <div id="exCode#{exampleIndex}" class="exCode well">#{prettyExampleCode}</div>
-<div id="exPlayer#{exampleIndex}" class="exPlayer">
+<div id="exPlayerActions#{exampleIndex}" class="exPlayerActions">
 [<a class=\"listenclick\" onclick="useExampleCode#{exampleIndex}(true); return false">Listen Here</a>]
 [<a href="#" onclick="useExampleCode#{exampleIndex}(false)">Listen in Playground</a>]
+</div>
+<div id="exPlayer#{exampleIndex}" class="exPlayer">
 </div>
 <script>
 function useExampleCode#{exampleIndex}(doRender) {

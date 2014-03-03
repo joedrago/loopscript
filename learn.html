@@ -26,6 +26,10 @@
       .listenclick {
         cursor: pointer;
       }
+
+      .well {
+        margin-bottom: 2px;
+      }
     </style>
   </head>
   <body>
@@ -116,6 +120,10 @@
   .exPlayer {
     font-size: 0.8em;
   }
+
+  .exPlayerActions {
+    font-size: 0.8em;
+  }
 </style>
 
 <h1>Learning LoopScript</h1>
@@ -146,9 +154,11 @@ Sounds are created using a simple declarative format. A 1.5 second C note might 
   <span class="command">duration</span> 1500 
   <span class="command">note</span> C 
 </div>
-<div id="exPlayer1" class="exPlayer">
+<div id="exPlayerActions1" class="exPlayerActions">
 [<a class="listenclick" onclick="useExampleCode1(true); return false">Listen Here</a>]
 [<a href="#" onclick="useExampleCode1(false)">Listen in Playground</a>]
+</div>
+<div id="exPlayer1" class="exPlayer">
 </div>
 <script>
 function useExampleCode1(doRender) {
@@ -198,9 +208,11 @@ Basic LoopScript format:
   <span class="command">pattern</span> note1 <span class="pattern">x.......x.......</span>     <span class="comment"># Uses note1</span>
   <span class="command">pattern</span> bass1 <span class="pattern">....x.......x...</span>     <span class="comment"># Uses bass1</span>
 </div>
-<div id="exPlayer2" class="exPlayer">
+<div id="exPlayerActions2" class="exPlayerActions">
 [<a class="listenclick" onclick="useExampleCode2(true); return false">Listen Here</a>]
 [<a href="#" onclick="useExampleCode2(false)">Listen in Playground</a>]
+</div>
+<div id="exPlayer2" class="exPlayer">
 </div>
 <script>
 function useExampleCode2(doRender) {
@@ -226,9 +238,11 @@ A tone that uses all defaults:
 </div>
 <div id="exCode3" class="exCode well"><span class="keyword">tone</span> example1 
 </div>
-<div id="exPlayer3" class="exPlayer">
+<div id="exPlayerActions3" class="exPlayerActions">
 [<a class="listenclick" onclick="useExampleCode3(true); return false">Listen Here</a>]
 [<a href="#" onclick="useExampleCode3(false)">Listen in Playground</a>]
+</div>
+<div id="exPlayer3" class="exPlayer">
 </div>
 <script>
 function useExampleCode3(doRender) {
@@ -271,9 +285,11 @@ So complicated!:
   <span class="command">adsr</span> 0.005 0.05 0.7 0.05 
   <span class="command">reverb</span> 250 0.5 
 </div>
-<div id="exPlayer4" class="exPlayer">
+<div id="exPlayerActions4" class="exPlayerActions">
 [<a class="listenclick" onclick="useExampleCode4(true); return false">Listen Here</a>]
 [<a href="#" onclick="useExampleCode4(false)">Listen in Playground</a>]
+</div>
+<div id="exPlayer4" class="exPlayer">
 </div>
 <script>
 function useExampleCode4(doRender) {
@@ -300,9 +316,11 @@ Basic sample:
 <div id="exCode5" class="exCode well"><span class="keyword">sample</span> clap 
   <span class="command">src</span> samples/clap.wav 
 </div>
-<div id="exPlayer5" class="exPlayer">
+<div id="exPlayerActions5" class="exPlayerActions">
 [<a class="listenclick" onclick="useExampleCode5(true); return false">Listen Here</a>]
 [<a href="#" onclick="useExampleCode5(false)">Listen in Playground</a>]
+</div>
+<div id="exPlayer5" class="exPlayer">
 </div>
 <script>
 function useExampleCode5(doRender) {
@@ -340,9 +358,11 @@ Pitch correction (compare to the sample above to hear the difference in pitch):
   <span class="command">srcnote</span> c 
   <span class="command">note</span> a 
 </div>
-<div id="exPlayer6" class="exPlayer">
+<div id="exPlayerActions6" class="exPlayerActions">
 [<a class="listenclick" onclick="useExampleCode6(true); return false">Listen Here</a>]
 [<a href="#" onclick="useExampleCode6(false)">Listen in Playground</a>]
+</div>
+<div id="exPlayer6" class="exPlayer">
 </div>
 <script>
 function useExampleCode6(doRender) {
@@ -360,7 +380,46 @@ function useExampleCode6(doRender) {
 <a name="loops">&nbsp;</a>
 <h3>Loops</h3>
 
-<p>--Soon--</p>
+<p>Loops are mixes of sounds in timed patterns. A loop requires at least one pattern which has the sound it will be repeating and a string of letters which represent the pattern itself. An example:</p>
+
+<div id="exOuter7" class="exOuter">
+<div id="exTitle7" class="exTitle">
+120 BPM
+</div>
+<div id="exCode7" class="exCode well"> 
+<span class="keyword">sample</span> clap 
+  <span class="command">src</span> samples/clap.wav 
+ 
+<span class="keyword">loop</span> loop1 
+  <span class="command">pattern</span> clap <span class="pattern">x...x...x...x...</span> 
+</div>
+<div id="exPlayerActions7" class="exPlayerActions">
+[<a class="listenclick" onclick="useExampleCode7(true); return false">Listen Here</a>]
+[<a href="#" onclick="useExampleCode7(false)">Listen in Playground</a>]
+</div>
+<div id="exPlayer7" class="exPlayer">
+</div>
+<script>
+function useExampleCode7(doRender) {
+  var exampleCode7 = "\nsample clap\n  src samples/clap.wav\n\nloop loop1\n  pattern clap x...x...x...x...";
+  if(doRender) {
+    render(exampleCode7, '#exPlayer7', false, false);
+  } else {
+    var encodedScript = LZString.compressToBase64(exampleCode7);
+    window.location = "play.html?s=" + encodedScript;
+  }
+}
+</script>
+</div>
+
+<p>Pattern strings must always be a multiple of 16 characters, but has no limit to its length (within reason).
+
+Loops support the following settings:</p>
+
+<ul>
+<li><span class="command">bpm</span> - Beats Per Minute, aka tempo. <b>120</b> default.</li>
+<li><span class="command">pattern</span> - Explained above. Takes another sound's name and a pattern string.</li>
+</ul>
 
 <a name="tracks">&nbsp;</a>
 <h3>Tracks</h3>

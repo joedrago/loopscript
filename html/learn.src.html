@@ -47,6 +47,10 @@
   .exPlayer {
     font-size: 0.8em;
   }
+
+  .exPlayerActions {
+    font-size: 0.8em;
+  }
 </style>
 
 <h1>Learning LoopScript</h1>
@@ -177,7 +181,25 @@ END
 <a name="loops">&nbsp;</a>
 <h3>Loops</h3>
 
-<p>--Soon--</p>
+<p>Loops are mixes of sounds in timed patterns. A loop requires at least one pattern which has the sound it will be repeating and a string of letters which represent the pattern itself. An example:</p>
+
+EXAMPLE 120 BPM
+
+sample clap
+  src samples/clap.wav
+
+loop loop1
+  pattern clap x...x...x...x...
+END
+
+<p>Pattern strings must always be a multiple of 16 characters, but has no limit to its length (within reason).
+
+Loops support the following settings:</p>
+
+<ul>
+<li><span class="command">bpm</span> - Beats Per Minute, aka tempo. <b>120</b> default.</li>
+<li><span class="command">pattern</span> - Explained above. Takes another sound's name and a pattern string.</li>
+</ul>
 
 <a name="tracks">&nbsp;</a>
 <h3>Tracks</h3>
