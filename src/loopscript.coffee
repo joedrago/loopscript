@@ -52,6 +52,109 @@ countIndent = (text) ->
   return indent
 
 # -------------------------------------------------------------------------------
+# Bitmap code originally from http://mrcoles.com/low-res-paint/ (MIT licensed)
+
+_asLittleEndianHex = (value, bytes) ->
+  # Convert value into little endian hex bytes
+  # value - the number as a decimal integer (representing bytes)
+  # bytes - the number of bytes that this value takes up in a string
+
+  # Example:
+  # _asLittleEndianHex(2835, 4)
+  # > '\x13\x0b\x00\x00'
+
+  result = []
+
+  while bytes > 0
+    result.push(String.fromCharCode(value & 255))
+    value >>= 8
+    bytes--
+
+  return result.join('')
+
+_collapseData = (rows, row_padding) ->
+  # Convert rows of RGB arrays into BMP data
+  rows_len = rows.length
+  pixels_len = if rows_len then rows[0].length else 0
+  padding = ''
+  result = []
+
+  while row_padding > 0
+    padding += '\x00'
+    row_padding--
+
+  for i in [0...rows_len]
+    for j in [0...pixels_len]
+      pixel = rows[i][j]
+      result.push(String.fromCharCode(pixel[2]) +
+                  String.fromCharCode(pixel[1]) +
+                  String.fromCharCode(pixel[0]))
+
+    result.push(padding)
+
+  return result.join('')
+
+_scaleRows = (rows, scale) ->
+  # Simplest scaling possible
+  real_w = rows.length
+  scaled_w = parseInt(real_w * scale)
+  real_h = if real_w then rows[0].length else 0
+  scaled_h = parseInt(real_h * scale)
+  new_rows = []
+
+  for y in [0...scaled_h]
+    new_rows.push(new_row = [])
+    for x in [0...scaled_w]
+      new_row.push(rows[parseInt(y/scale)][parseInt(x/scale)])
+
+  return new_rows
+
+generateBitmapDataURL = (rows, scale) ->
+  # Expects rows starting in bottom left
+  # formatted like this: [[[255, 0, 0], [255, 255, 0], ...], ...]
+  # which represents: [[red, yellow, ...], ...]
+
+  if !btoa
+    return false
+
+  scale = scale || 1
+  if (scale != 1)
+    rows = _scaleRows(rows, scale)
+
+  height = rows.length                                # the number of rows
+  width = if height then rows[0].length else 0        # the number of columns per row
+  row_padding = (4 - (width * 3) % 4) % 4             # pad each row to a multiple of 4 bytes
+  num_data_bytes = (width * 3 + row_padding) * height # size in bytes of BMP data
+  num_file_bytes = 54 + num_data_bytes                # full header size (offset) + size of data
+
+  height = _asLittleEndianHex(height, 4)
+  width = _asLittleEndianHex(width, 4)
+  num_data_bytes = _asLittleEndianHex(num_data_bytes, 4)
+  num_file_bytes = _asLittleEndianHex(num_file_bytes, 4)
+
+  # these are the actual bytes of the file...
+
+  file = 'BM' +                # "Magic Number"
+          num_file_bytes +     # size of the file (bytes)*
+          '\x00\x00' +         # reserved
+          '\x00\x00' +         # reserved
+          '\x36\x00\x00\x00' + # offset of where BMP data lives (54 bytes)
+          '\x28\x00\x00\x00' + # number of remaining bytes in header from here (40 bytes)
+          width +              # the width of the bitmap in pixels*
+          height +             # the height of the bitmap in pixels*
+          '\x01\x00' +         # the number of color planes (1)
+          '\x18\x00' +         # 24 bits / pixel
+          '\x00\x00\x00\x00' + # No compression (0)
+          num_data_bytes +     # size of the BMP data (bytes)*
+          '\x13\x0B\x00\x00' + # 2835 pixels/meter - horizontal resolution
+          '\x13\x0B\x00\x00' + # 2835 pixels/meter - the vertical resolution
+          '\x00\x00\x00\x00' + # Number of colors in the palette (keep 0 for 24-bit)
+          '\x00\x00\x00\x00' + # 0 important colors (means all colors are important)
+          _collapseData(rows, row_padding)
+
+  return 'data:image/bmp;base64,' + btoa(file)
+
+# -------------------------------------------------------------------------------
 # Parser
 
 class Parser
@@ -636,6 +739,56 @@ class Renderer
     return sound
 
 # -------------------------------------------------------------------------------
+# Waveform Image Renderer
+
+renderWaveformImage = (samples, width, height, backgroundColor, waveformColor) ->
+  backgroundColor ?= [255, 255, 255]
+  waveformColor ?= [255, 0, 0]
+  rows = []
+  for j in [0...height]
+    row = []
+    for i in [0...width]
+      row.push backgroundColor
+    rows.push row
+
+  samplesPerCol = Math.floor(samples.length / width)
+
+  peak = 0
+  for sample in samples
+    a = Math.abs(sample)
+    if peak < a
+      peak = a
+
+  peak = Math.floor(peak * 1.1) # Give a bit of margin on top/bottom
+
+  middleRowIndex = Math.floor(height / 2)
+
+  if peak == 0
+    row = rows[middleRowIndex]
+    for i in [0...width]
+      row[i] = waveformColor
+  else
+    for i in [0...width]
+      sampleOffset = Math.floor((i / width) * samples.length)
+      sampleSum = 0
+      sampleMax = 0
+      for sampleIndex in [sampleOffset...(sampleOffset+samplesPerCol)]
+        a = Math.abs(samples[sampleIndex])
+        sampleSum += a
+        if sampleMax < a
+          sampleMax = a
+      sampleAvg = Math.floor(sampleSum / samplesPerCol)
+      lineHeight = Math.floor(sampleMax / peak * height)
+      lineOffset = (height - lineHeight) >> 1
+      if lineHeight == 0
+        lineHeight = 1
+      for j in [0...lineHeight]
+        row = rows[j + lineOffset]
+        row[i] = waveformColor
+
+  return generateBitmapDataURL rows
+
+# -------------------------------------------------------------------------------
 # Exports
 
 renderLoopScript = (args) ->
@@ -652,9 +805,14 @@ renderLoopScript = (args) ->
     logObj.verbose "Rendering..."
     renderer = new Renderer(logObj, sampleRate, args.readLocalFiles, parser.objects)
     outputSound = renderer.render(which, {})
-    if args.outputFilename
-      return riffwave.writeWAV args.outputFilename, sampleRate, outputSound.samples
-    return riffwave.makeBlobUrl(sampleRate, outputSound.samples)
+    ret = {}
+    if args.wavFilename
+      riffwave.writeWAV args.outputFilename, sampleRate, outputSound.samples
+    else
+      ret.wavUrl = riffwave.makeBlobUrl(sampleRate, outputSound.samples)
+    if args.imageWidth? and args.imageHeight? and (args.imageWidth > 0) and (args.imageHeight > 0)
+      ret.imageUrl = renderWaveformImage(outputSound.samples, args.imageWidth, args.imageHeight, args.imageBackgroundColor, args.imageWaveformColor)
+    return ret
 
   return null
 

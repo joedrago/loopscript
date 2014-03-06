@@ -451,8 +451,11 @@ Loops support the following settings:</p>
       {
         $('#output').css("display", "block");
       }
-      var blobUrl = loopscript.render({
+      var lsOutput = loopscript.render({
           script: scriptText,
+          imageWidth: 300,
+          imageHeight: 50,
+          imageWaveformColor: [0, 134, 179],
           log: {
             verbose: function(text) {
               if(showOutput)
@@ -472,9 +475,10 @@ Loops support the following settings:</p>
             }
           }
       });
-      var html = "<audio src="+blobUrl+" controls preload=\"auto\" autobuffer></audio>";
+      var html = "<img src=\""+lsOutput.imageUrl+"\"><br>";
+      html += "<audio src="+lsOutput.wavUrl+" controls preload=\"auto\" autobuffer></audio>";
       if(showSaveAs) {
-        html += "<a href="+blobUrl+"><br>Right click here to Save As...</a>";
+        html += "<a href="+lsOutput.wavUrl+"><br>Right click here to Save As...</a>";
       }
       $(outputID).html(html);
     }

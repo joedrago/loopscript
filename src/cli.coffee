@@ -28,7 +28,7 @@ main = ->
 
   which = null
   inputFilename = args._[0]
-  outputFilename = args._[1]
+  wavFilename = args._[1]
   if args._.length > 2
     which = args._[2]
 
@@ -41,12 +41,12 @@ main = ->
   loopscript.render {
     script: script
     log: log
-    outputFilename: outputFilename
+    wavFilename: wavFilename
     which: which
     readLocalFiles: true
   }
 
-  log.verbose "Wrote #{outputFilename}"
+  log.verbose "Wrote #{wavFilename}"
 
 module.exports =
   main: main

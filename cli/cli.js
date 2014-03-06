@@ -26,7 +26,7 @@
   };
 
   main = function() {
-    var args, inputFilename, loopscript, outputFilename, script, which;
+    var args, inputFilename, loopscript, script, wavFilename, which;
     args = require('minimist')(process.argv.slice(2), {
       boolean: ['h', 'v'],
       alias: {
@@ -39,7 +39,7 @@
     }
     which = null;
     inputFilename = args._[0];
-    outputFilename = args._[1];
+    wavFilename = args._[1];
     if (args._.length > 2) {
       which = args._[2];
     }
@@ -52,11 +52,11 @@
     loopscript.render({
       script: script,
       log: log,
-      outputFilename: outputFilename,
+      wavFilename: wavFilename,
       which: which,
       readLocalFiles: true
     });
-    return log.verbose("Wrote " + outputFilename);
+    return log.verbose("Wrote " + wavFilename);
   };
 
   module.exports = {
