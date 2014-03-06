@@ -479,7 +479,6 @@ class Renderer
     return envelope
 
   renderTone: (toneObj, overrides) ->
-    offset = 0
     amplitude = 10000
     if overrides.length > 0
       length = overrides.length
@@ -495,12 +494,15 @@ class Renderer
     else
       freq = findFreq(toneObj.octave, toneObj.note)
     envelope = @generateEnvelope(toneObj.adsr, length)
+    period = @sampleRate / freq
     for i in [0...length]
-      period = @sampleRate / freq
-      sine = Math.sin(offset + i / period * 2 * Math.PI)
-      # if(toneObj.wav == "square")
-      #   sine = (sine > 0) ? 1 : -1
-      samples[i] = sine * amplitude * envelope[i]
+      if toneObj.wave == "sawtooth"
+        sample = ((i % period) / period) - 0.5
+      else
+        sample = Math.sin(i / period * 2 * Math.PI)
+        if toneObj.wave == "square"
+          sample = if (sample > 0) then 1 else -1
+      samples[i] = sample * amplitude * envelope[i]
 
     return {
       samples: samples
@@ -761,10 +763,8 @@ renderWaveformImage = (samples, width, height, backgroundColor, waveformColor) -
 
   peak = Math.floor(peak * 1.1) # Give a bit of margin on top/bottom
 
-  middleRowIndex = Math.floor(height / 2)
-
   if peak == 0
-    row = rows[middleRowIndex]
+    row = rows[ Math.floor(height / 2) ]
     for i in [0...width]
       row[i] = waveformColor
   else

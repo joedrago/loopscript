@@ -552,8 +552,7 @@
     };
 
     Renderer.prototype.renderTone = function(toneObj, overrides) {
-      var A, B, amplitude, envelope, freq, i, length, offset, period, samples, sine, _i;
-      offset = 0;
+      var A, B, amplitude, envelope, freq, i, length, period, sample, samples, _i;
       amplitude = 10000;
       if (overrides.length > 0) {
         length = overrides.length;
@@ -571,10 +570,17 @@
         freq = findFreq(toneObj.octave, toneObj.note);
       }
       envelope = this.generateEnvelope(toneObj.adsr, length);
+      period = this.sampleRate / freq;
       for (i = _i = 0; 0 <= length ? _i < length : _i > length; i = 0 <= length ? ++_i : --_i) {
-        period = this.sampleRate / freq;
-        sine = Math.sin(offset + i / period * 2 * Math.PI);
-        samples[i] = sine * amplitude * envelope[i];
+        if (toneObj.wave === "sawtooth") {
+          sample = ((i % period) / period) - 0.5;
+        } else {
+          sample = Math.sin(i / period * 2 * Math.PI);
+          if (toneObj.wave === "square") {
+            sample = sample > 0 ? 1 : -1;
+          }
+        }
+        samples[i] = sample * amplitude * envelope[i];
       }
       return {
         samples: samples,
@@ -869,7 +875,7 @@
   })();
 
   renderWaveformImage = function(samples, width, height, backgroundColor, waveformColor) {
-    var a, i, j, lineHeight, lineOffset, middleRowIndex, peak, row, rows, sample, sampleAvg, sampleIndex, sampleMax, sampleOffset, sampleSum, samplesPerCol, _i, _j, _k, _l, _len, _m, _n, _o, _ref;
+    var a, i, j, lineHeight, lineOffset, peak, row, rows, sample, sampleAvg, sampleIndex, sampleMax, sampleOffset, sampleSum, samplesPerCol, _i, _j, _k, _l, _len, _m, _n, _o, _ref;
     if (backgroundColor == null) {
       backgroundColor = [255, 255, 255];
     }
@@ -894,9 +900,8 @@
       }
     }
     peak = Math.floor(peak * 1.1);
-    middleRowIndex = Math.floor(height / 2);
     if (peak === 0) {
-      row = rows[middleRowIndex];
+      row = rows[Math.floor(height / 2)];
       for (i = _l = 0; 0 <= width ? _l < width : _l > width; i = 0 <= width ? ++_l : --_l) {
         row[i] = waveformColor;
       }
