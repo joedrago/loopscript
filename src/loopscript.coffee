@@ -807,7 +807,7 @@ renderLoopScript = (args) ->
     outputSound = renderer.render(which, {})
     ret = {}
     if args.wavFilename
-      riffwave.writeWAV args.outputFilename, sampleRate, outputSound.samples
+      riffwave.writeWAV args.wavFilename, sampleRate, outputSound.samples
     else
       ret.wavUrl = riffwave.makeBlobUrl(sampleRate, outputSound.samples)
     if args.imageWidth? and args.imageHeight? and (args.imageWidth > 0) and (args.imageHeight > 0)
