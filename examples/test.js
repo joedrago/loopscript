@@ -9,7 +9,7 @@ loopscript.render({
     readLocalFiles: true,
     log: {
         verbose: function(text) {
-                console.log(text);
+            console.log(text);
         },
         error: function(text) {
             console.error("ERROR: " + text);
