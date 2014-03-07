@@ -652,7 +652,7 @@
         }
       }
       samplesPerBeat = this.sampleRate / (loopObj.bpm / 60) / 4;
-      totalLength = samplesPerBeat * beatCount;
+      totalLength = Math.floor(samplesPerBeat * beatCount);
       overflowLength = totalLength;
       _ref1 = loopObj._patterns;
       for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
@@ -819,10 +819,13 @@
     };
 
     Renderer.prototype.render = function(which, overrides) {
-      var cacheName, delaySamples, i, object, samples, sound, totalLength, _i, _j, _k, _l, _ref, _ref1, _ref2, _ref3;
+      var cacheName, delaySamples, factor, i, newfreq, object, oldfreq, overrideNote, relength, resamples, samples, sound, totalLength, _i, _j, _k, _l, _m, _n, _ref, _ref1, _ref2, _ref3;
       object = this.getObject(which);
       if (!object) {
         return null;
+      }
+      if (overrides == null) {
+        overrides = {};
       }
       cacheName = this.calcCacheName(object._type, which, overrides);
       if (this.soundCache[cacheName]) {
@@ -843,8 +846,26 @@
             return null;
         }
       }).call(this);
+      if (object._type !== 'tone') {
+        overrideNote = overrides.note ? overrides.note : object.note;
+        if ((overrideNote !== object.srcnote) || (object.octave !== object.srcoctave)) {
+          oldfreq = findFreq(object.srcoctave, object.srcnote);
+          newfreq = findFreq(object.octave, overrideNote);
+          factor = oldfreq / newfreq;
+          relength = Math.floor(sound.samples.length * factor);
+          resamples = Array(relength);
+          for (i = _i = 0; 0 <= relength ? _i < relength : _i > relength; i = 0 <= relength ? ++_i : --_i) {
+            resamples[i] = 0;
+          }
+          for (i = _j = 0; 0 <= relength ? _j < relength : _j > relength; i = 0 <= relength ? ++_j : --_j) {
+            resamples[i] = sound.samples[Math.floor(i / factor)];
+          }
+          sound.samples = resamples;
+          sound.length = resamples.length;
+        }
+      }
       if ((object.volume != null) && (object.volume !== 1.0)) {
-        for (i = _i = 0, _ref = sound.samples.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+        for (i = _k = 0, _ref = sound.samples.length; 0 <= _ref ? _k < _ref : _k > _ref; i = 0 <= _ref ? ++_k : --_k) {
           sound.samples[i] *= object.volume;
         }
       }
@@ -853,13 +874,13 @@
         if (sound.samples.length > delaySamples) {
           totalLength = sound.samples.length + (delaySamples * 8);
           samples = Array(totalLength);
-          for (i = _j = 0, _ref1 = sound.samples.length; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; i = 0 <= _ref1 ? ++_j : --_j) {
+          for (i = _l = 0, _ref1 = sound.samples.length; 0 <= _ref1 ? _l < _ref1 : _l > _ref1; i = 0 <= _ref1 ? ++_l : --_l) {
             samples[i] = sound.samples[i];
           }
-          for (i = _k = _ref2 = sound.samples.length; _ref2 <= totalLength ? _k < totalLength : _k > totalLength; i = _ref2 <= totalLength ? ++_k : --_k) {
+          for (i = _m = _ref2 = sound.samples.length; _ref2 <= totalLength ? _m < totalLength : _m > totalLength; i = _ref2 <= totalLength ? ++_m : --_m) {
             samples[i] = 0;
           }
-          for (i = _l = 0, _ref3 = totalLength - delaySamples; 0 <= _ref3 ? _l < _ref3 : _l > _ref3; i = 0 <= _ref3 ? ++_l : --_l) {
+          for (i = _n = 0, _ref3 = totalLength - delaySamples; 0 <= _ref3 ? _n < _ref3 : _n > _ref3; i = 0 <= _ref3 ? ++_n : --_n) {
             samples[i + delaySamples] += Math.floor(samples[i] * object.reverb.decay);
           }
           sound.samples = samples;

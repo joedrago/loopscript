@@ -570,7 +570,7 @@ class Renderer
         beatCount = pattern.length
 
     samplesPerBeat = @sampleRate / (loopObj.bpm / 60) / 4
-    totalLength = samplesPerBeat * beatCount
+    totalLength = Math.floor(samplesPerBeat * beatCount)
     overflowLength = totalLength
 
     for pattern in loopObj._patterns
@@ -703,6 +703,8 @@ class Renderer
     if not object
       return null
 
+    overrides ?= {}
+
     cacheName = @calcCacheName(object._type, which, overrides)
     if @soundCache[cacheName]
       return @soundCache[cacheName]
@@ -715,6 +717,26 @@ class Renderer
       else
         @error "unknown type #{object._type}"
         null
+
+    if object._type != 'tone'
+      overrideNote = if overrides.note then overrides.note else object.note
+      if (overrideNote != object.srcnote) or (object.octave != object.srcoctave)
+        oldfreq = findFreq(object.srcoctave, object.srcnote)
+        newfreq = findFreq(object.octave, overrideNote)
+
+        factor = oldfreq / newfreq
+        # @log.verbose "old: #{oldfreq}, new: #{newfreq}, factor: #{factor}"
+
+        # TODO: Properly resample here with something other than "nearest neighbor"
+        relength = Math.floor(sound.samples.length * factor)
+        resamples = Array(relength)
+        for i in [0...relength]
+          resamples[i] = 0
+        for i in [0...relength]
+          resamples[i] = sound.samples[Math.floor(i / factor)]
+
+        sound.samples = resamples
+        sound.length = resamples.length
 
     # Volume
     if object.volume? and (object.volume != 1.0)
