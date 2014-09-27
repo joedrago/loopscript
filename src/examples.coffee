@@ -124,3 +124,52 @@ loop loop1
 track song
   pattern loop1 xx
 """
+
+  kick: """
+# ------------------------------------------------------------
+# Bass kick (mixing a simple kick with a sustained bass sine)
+# Try changing 'freq' to anywhere in 55-80, and/or 'duration'
+
+tone note1
+  adsr 0.005 0.05 0.7 0.05
+  freq 60
+  duration 1500
+
+sample kick
+  volume 0.7
+  src samples/kick3.wav
+
+track BassKick
+  pattern note1 x
+  pattern kick  x
+
+"""
+
+  kickpattern: """
+# ------------------------------------------------------------
+# Simple kick pattern
+
+bpm 90
+
+tone note1
+  adsr 0.005 0.05 0.7 0.05
+  octave 1
+  duration 1500
+
+sample kick
+  volume 0.7
+  src samples/kick3.wav
+
+sample clap
+  src samples/clap.wav
+
+loop loop1
+  pattern clap  ....x.......x...
+  pattern note1 b.b...b.b.b.....
+  pattern kick  x.x...x.x.x.....
+  
+track derp
+  pattern loop1 xxxx
+
+"""
+

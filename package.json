@@ -21,8 +21,12 @@
     "type": "git",
     "url": "git://github.com/joedrago/loopscript.git"
   },
+  "scripts": {
+    "build": "cake build"
+  },
   "devDependencies": {
-    "browserify": "*",
+    "coffee-script": "*",
+    "browserify": "4.x",
     "coffeeify": "*",
     "mold-source-map": "*",
     "node-watch": "*",

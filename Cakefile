@@ -103,7 +103,7 @@ generateHTML = (cb) ->
     lines = srcText.split('\n')
     dstText = ""
     exampleIndex = 0
-    while line = lines.shift()
+    while (line = lines.shift()) != undefined
       line = line.replace(/(\r\n|\n|\r)/gm,"") # strip newlines
       if matches = line.match(/^EXAMPLE\s+(.+)/)
         exampleCode = ""
