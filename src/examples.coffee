@@ -173,3 +173,30 @@ track derp
 
 """
 
+  wiggle: """
+# ------------------------------------------------------------
+# A silly approximation of Jason Derulo's Wiggle
+
+bpm 82
+
+tone bass
+  adsr 0.005 0.05 0.7 0.05
+  duration 1500
+  octave 2
+
+sample kick
+  volume 0.7
+  src samples/kick3.wav
+
+sample snap
+  volume 0.5
+  src samples/snap.wav
+
+loop loop1
+  pattern snap ....x.......x...
+  pattern kick x..x..x.........
+  pattern bass a..f..e.........
+
+track wiggle
+  pattern loop1 xxxx
+"""
