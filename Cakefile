@@ -7,6 +7,7 @@ modules = [
   'riffwave'
   'freq'
   'examples'
+  'beatmaker'
 ]
 
 pages = [
