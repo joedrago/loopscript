@@ -167,7 +167,7 @@ loop loop1
   pattern clap  ....x.......x...
   pattern note1 b.b...b.b.b.....
   pattern kick  x.x...x.x.x.....
-  
+
 track derp
   pattern loop1 xxxx
 
@@ -199,4 +199,27 @@ loop loop1
 
 track wiggle
   pattern loop1 xxxx
+"""
+
+  beatmaker: """
+# ------------------------------------------------------------
+# BeatMaker Test Bed
+
+sample K -> src samples/kick3.wav
+sample C -> src samples/clap.wav
+
+# ------------------------------------------------------------
+# Update the pattern lines and BPM here with BeatMaker data.
+
+bpm 90
+
+loop loop1
+  pattern C ....x.......x...
+  pattern K x.x...x.x.x.....
+
+# ------------------------------------------------------------
+
+track derp
+  pattern loop1 xxxx
+
 """

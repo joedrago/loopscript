@@ -78,9 +78,9 @@ H-L are the black keys:
     <li role="presentation"><a role="menuitem" tabindex="-1" href="#" onclick="example('chocobo')">Chocobo Theme</a></li>
     <li role="presentation"><a role="menuitem" tabindex="-1" href="#" onclick="example('kick')">Bass Kick</a></li>
     <li role="presentation"><a role="menuitem" tabindex="-1" href="#" onclick="example('kickpattern')">Simple Kick Pattern</a></li>
-    <li role="presentation"><a role="menuitem" tabindex="-1" href="#"
-        onclick="example('wiggle')">Wiggle</a></li>
+    <li role="presentation"><a role="menuitem" tabindex="-1" href="#" onclick="example('wiggle')">Wiggle</a></li>
     <li role="presentation"><a role="menuitem" tabindex="-1" href="#" onclick="example('motto')">Drake - The Motto</a></li>
+    <li role="presentation"><a role="menuitem" tabindex="-1" href="#" onclick="example('beatmaker')">BeatMaker Test Bed</a></li>
   </ul>
 </span>
 
@@ -103,7 +103,8 @@ Compile output:<br>
 BeatMaker is a convenience tool for coming up with pattern statements.<br>
 Simply click in the box below and use the alphabet keys as your piano. After you've repeated the pattern exactly twice, wait for BeatMaker to make a best guess on BPM and a series of possible patterns to use.<br>
 <br>
-
+Use the <a href="#" onclick="if(confirm('Replace the current LoopScript with the BeatMaker Test Bed?')) { example('beatmaker'); }">BeatMaker Test Bed sample script</a> to see a simple use case. (If you use this, use K and C for kick and clap, respectively.)<br>
+<br>
 <input type="text" id="beatinput" readonly>
 
 <div id="beatoutput">(BeatMaker output will go here.)<br>
