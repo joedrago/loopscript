@@ -136,7 +136,6 @@ tone note1
   duration 1500
 
 sample kick
-  volume 0.7
   src samples/kick3.wav
 
 track BassKick
@@ -157,7 +156,6 @@ tone note1
   duration 1500
 
 sample kick
-  volume 0.7
   src samples/kick3.wav
 
 sample clap
@@ -185,7 +183,6 @@ tone bass
   octave 2
 
 sample kick
-  volume 0.7
   src samples/kick3.wav
 
 sample snap
