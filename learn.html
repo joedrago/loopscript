@@ -190,16 +190,42 @@ Comments are made with the hash mark ("<span class="comment">#</span>"), and con
 
 An arrow pointing to the right ("<span class="operator">-&gt;</span>") can be used an alternative to an indent, and a semicolon and break up multiple settings on the same line. (experimental)</p>
 
-
-tone bass1                          # This begins a new tone (note the reset indentation)
-  duration 250                      # New indent begins here
-  octave 1
-  note B
-
-loop loop1                          # Loop declaration
-  pattern note1 x.......x.......    # Uses note1
-  pattern bass1 ....x.......x...    # Uses bass1
-END
+<div id="exOuter2" class="exOuter">
+<div id="exTitle2" class="exTitle">
+Basic LoopScript format:
+</div>
+<div id="exCode2" class="exCode well"><span class="keyword">tone</span> note1                           <span class="comment"># Defines a new tone named "note1"</span>
+  <span class="command">duration</span> 250                       <span class="comment"># Length of tone, in milliseconds</span>
+  <span class="command">octave</span> 4                           <span class="comment"># Sets the octave for the note (0-8)</span>
+  <span class="command">note</span> C                             <span class="comment"># A-G are regular notes, H-L are the "black keys"</span>
+ 
+<span class="keyword">tone</span> bass1                           <span class="comment"># This begins a new tone (note the reset indentation)</span>
+  <span class="command">duration</span> 250                       <span class="comment"># New indent begins here</span>
+  <span class="command">octave</span> 1 
+  <span class="command">note</span> B 
+ 
+<span class="keyword">loop</span> loop1                           <span class="comment"># Loop declaration</span>
+  <span class="command">pattern</span> note1 <span class="pattern">x.......x.......</span>     <span class="comment"># Uses note1</span>
+  <span class="command">pattern</span> bass1 <span class="pattern">....x.......x...</span>     <span class="comment"># Uses bass1</span>
+</div>
+<div id="exPlayerActions2" class="exPlayerActions">
+[<a class="listenclick" onclick="useExampleCode2(true); return false">Listen Here</a>]
+[<a href="#" onclick="useExampleCode2(false)">Listen in Playground</a>]
+</div>
+<div id="exPlayer2" class="exPlayer">
+</div>
+<script>
+function useExampleCode2(doRender) {
+  var exampleCode2 = "tone note1                          # Defines a new tone named \"note1\"\n  duration 250                      # Length of tone, in milliseconds\n  octave 4                          # Sets the octave for the note (0-8)\n  note C                            # A-G are regular notes, H-L are the \"black keys\"\n\ntone bass1                          # This begins a new tone (note the reset indentation)\n  duration 250                      # New indent begins here\n  octave 1\n  note B\n\nloop loop1                          # Loop declaration\n  pattern note1 x.......x.......    # Uses note1\n  pattern bass1 ....x.......x...    # Uses bass1";
+  if(doRender) {
+    render(exampleCode2, '#exPlayer2', false, false);
+  } else {
+    var encodedScript = LZString.compressToBase64(exampleCode2);
+    window.location = "play.html?s=" + encodedScript;
+  }
+}
+</script>
+</div>
 
 <a name="tones">&nbsp;</a>
 <h3>Tones</h3>
@@ -356,13 +382,35 @@ function useExampleCode6(doRender) {
 
 <p>Loops are mixes of sounds in timed patterns. A loop requires at least one pattern which has the sound it will be repeating and a string of letters which represent the pattern itself. An example:</p>
 
-
-sample clap
-  src samples/clap.wav
-
-loop loop1
-  pattern clap x...x...x...x...
-END
+<div id="exOuter7" class="exOuter">
+<div id="exTitle7" class="exTitle">
+120 BPM
+</div>
+<div id="exCode7" class="exCode well"> 
+<span class="keyword">sample</span> clap 
+  <span class="command">src</span> samples/clap.wav 
+ 
+<span class="keyword">loop</span> loop1 
+  <span class="command">pattern</span> clap <span class="pattern">x...x...x...x...</span> 
+</div>
+<div id="exPlayerActions7" class="exPlayerActions">
+[<a class="listenclick" onclick="useExampleCode7(true); return false">Listen Here</a>]
+[<a href="#" onclick="useExampleCode7(false)">Listen in Playground</a>]
+</div>
+<div id="exPlayer7" class="exPlayer">
+</div>
+<script>
+function useExampleCode7(doRender) {
+  var exampleCode7 = "\nsample clap\n  src samples/clap.wav\n\nloop loop1\n  pattern clap x...x...x...x...";
+  if(doRender) {
+    render(exampleCode7, '#exPlayer7', false, false);
+  } else {
+    var encodedScript = LZString.compressToBase64(exampleCode7);
+    window.location = "play.html?s=" + encodedScript;
+  }
+}
+</script>
+</div>
 
 <p>Pattern strings must always be a multiple of 16 characters, but has no limit to its length (within reason).
 

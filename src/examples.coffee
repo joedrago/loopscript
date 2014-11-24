@@ -198,25 +198,39 @@ track wiggle
   pattern loop1 xxxx
 """
 
-  beatmaker: """
+  gambino3005: """
 # ------------------------------------------------------------
-# BeatMaker Test Bed
+# Childish Gambino - 3005 (intro)
 
-sample K -> src samples/kick3.wav
-sample C -> src samples/clap.wav
+bpm 83
 
-# ------------------------------------------------------------
-# Update the pattern lines and BPM here with BeatMaker data.
+sample z1   -> src samples/3005_zap1.wav
+sample z2   -> src samples/3005_zap2.wav
+sample z3   -> src samples/3005_zap3.wav
+sample rim  -> src samples/3005_rim.wav
+sample kick -> src samples/kick3.wav
 
-bpm 90
+tone bass
+  adsr 0.005 0.05 0.9 0.5
+  duration 1500
+  freq 55
+  volume 1.2
 
-loop loop1
-  pattern C ....x.......x...
-  pattern K x.x...x.x.x.....
+loop zaploop
+  pattern z1 x..x..x.........................
+  pattern z2 ........x..x..x.........x..x..x.
+  pattern z3 ................x..x..x.........
 
-# ------------------------------------------------------------
+loop rimloop
+  pattern rim ....x..x.x..x.......x..x.x..x...
 
-track derp
-  pattern loop1 xxxx
+loop bassloop
+  pattern kick x.....x...x.....x.....x...x.....
+  pattern bass x.....x...x.....x.....x...x.....
+
+track 3005
+  pattern zaploop  xxxxxxxxxx
+  pattern rimloop  ..xx..xxxx
+  pattern bassloop ....xxxxxx
 
 """
